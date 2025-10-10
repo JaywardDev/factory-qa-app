@@ -26,8 +26,8 @@ export default function App() {
             </span>
           </div>
           <div className="brand-copy">
-            <span className="brand-name">Hector Egger</span>
-            <span className="brand-tagline">Holzbau QA Console</span>
+            <span className="brand-name">Hector Egger NZ</span>
+            <span className="brand-tagline">Factory QA Sheet</span>
           </div>
         </div>
         <ExportButton />
