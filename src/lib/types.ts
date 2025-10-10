@@ -38,3 +38,13 @@ export type Component = {
   label: string;         // "EW_0001", "IW_1004", "MF_0004", "R_0005"
   qr_code?: string;      // optional; could be just the component id/label
 };
+
+export type ComponentType = Component['type'];
+
+export const TYPE_LABEL: Record<ComponentType,string> = {
+  ew: 'External Walls',
+  iw: 'Internal Walls',
+  mf: 'Mid-floors',
+  r:  'Roofs',
+  other: 'Other',
+};
