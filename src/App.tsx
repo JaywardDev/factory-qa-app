@@ -18,10 +18,20 @@ export default function App() {
 
   return (
     <div className="app">
-      <div className="toolbar">
-        <div className="title">Factory QA</div>
+      <header className="toolbar">
+        <div className="brand">
+          <div className="brand-mark" aria-hidden="true">
+            <span className="brand-mark__frame">
+              <span className="brand-mark__initials">HE</span>
+            </span>
+          </div>
+          <div className="brand-copy">
+            <span className="brand-name">Hector Egger</span>
+            <span className="brand-tagline">Holzbau QA Console</span>
+          </div>
+        </div>
         <ExportButton />
-      </div>
+      </header>
 
       {!currentProject && (
         <ProjectList onPick={setCurrentProject} />
@@ -53,9 +63,7 @@ export default function App() {
         <QAFormEditor />
       </Modal>
 
-      <div style={{fontSize:12, color:'#64748b', paddingTop:16}}>
-        Projects → Categories → Components → QA (modal)
-      </div>
+      <div className="app-hint">Projects → Categories → Components → QA (modal)</div>
     </div>
   );
 }

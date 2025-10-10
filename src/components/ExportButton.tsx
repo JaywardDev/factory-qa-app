@@ -1,8 +1,8 @@
 export default function ExportButton() {
-  return <button
-    style={{padding: '8px 12px', borderRadius: 6, border: '1px solid #ccc'}}
-    onClick={() => alert('Export coming soon')}
-  >
-    Export ZIP
-  </button>;
+  return (
+    <button className="btn accent" onClick={() => alert('Export coming soon')}>
+      <span className="btn-dot" aria-hidden="true" />
+      Export ZIP
+    </button>
+  );
 }
