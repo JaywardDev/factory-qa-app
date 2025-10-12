@@ -29,8 +29,20 @@ export default function CategoryBoard({
   }, [project.project_id]);
 
   const counts = useMemo(() => {
-    const c: Record<ComponentType, number> = { ew_0:0, iw_1:0, mf_1:0, roof:0, structure:0 };
-    for (const x of comps) c[(x.type as ComponentType) ?? 'other']++;
+    const c: Record<ComponentType, number> = {
+      ew: 0,
+      iw: 0,
+      mf: 0,
+      r: 0,
+      other: 0,
+    };
+
+    for (const x of comps) {
+      const type = (x.type as ComponentType) ?? "other";
+      if (type in c) {
+        c[type] += 1;
+      }
+    }
     return c;
   }, [comps]);
 
