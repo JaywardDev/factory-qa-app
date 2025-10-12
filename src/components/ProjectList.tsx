@@ -12,8 +12,14 @@ export default function ProjectList({ onPick, ready }: Props) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!ready) {
+      setLoading(true);
+      return;
+    }
+
     let active = true;
 
+    setLoading(true);
     (async () => {
       const rows = await db.projects.toArray();
       if (!active) return;
@@ -24,7 +30,7 @@ export default function ProjectList({ onPick, ready }: Props) {
     return () => {
       active = false;
     };
-  }, []);
+  }, [ready]);
 
   return (
     <div className="card">
