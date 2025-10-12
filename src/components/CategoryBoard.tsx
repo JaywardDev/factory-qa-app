@@ -4,12 +4,17 @@ import type { Project, Component as Comp, ComponentType } from "../lib/types";
 import { TYPE_LABEL } from "../lib/types";
 
 export default function CategoryBoard({
-  project, onPickCategory
+  project,
+  onPickCategory,
+  onBack,
 }: {
   project: Project;
   onPickCategory: (t: ComponentType) => void;
+  onBack: () => void;
 }) {
   const [comps, setComps] = useState<Comp[]>([]);
+
+  void onBack; // to avoid eslint no-unused-vars
 
   useEffect(() => {
     (async () => {
@@ -34,9 +39,16 @@ export default function CategoryBoard({
 
   return (
     <div className="card">
-      <h2 style={{marginTop:0}}>
-        {project.project_code} — {project.project_name ?? ''}
-      </h2>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:'1rem'}}>
+        <h2 style={{marginTop:0, marginBottom:0}}>
+          {project.project_code} — {project.project_name ?? ''}
+        </h2>
+        {onBack && (
+          <button type="button" className="btn" onClick={onBack}>
+            ← Back
+          </button>
+        )}
+      </div>
       <div className="deck-grid">
         {cats.map(t => (
           <button key={t} className="card btn"

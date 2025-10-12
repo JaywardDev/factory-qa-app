@@ -18,6 +18,10 @@ export default function App() {
   // seed initial data if db is empty
   useEffect(() => { seedIfEmpty(); }, []);
 
+  const handleBackToProjects = () => {
+    setCurrentType(null);
+  };
+  
   // main render and navigation flow
   return (
     <div className="app">
@@ -44,6 +48,7 @@ export default function App() {
         <CategoryBoard
           project={currentProject}
           onPickCategory={setCurrentType}
+          onBack={handleBackToProjects}
         />
       )}
 
