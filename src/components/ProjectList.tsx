@@ -4,9 +4,10 @@ import type { Project } from "../lib/types";
 
 type Props = {
   onPick: (project: Project) => void;
+  ready: boolean;
 };
 
-export default function ProjectList({ onPick }: Props) {
+export default function ProjectList({ onPick, ready }: Props) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
 

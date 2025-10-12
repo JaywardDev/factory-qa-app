@@ -1,6 +1,6 @@
 import type { ComponentType } from "react";
 import type { Component } from "../lib/types";
-import DefaultQAForm from "../components/DefaultQAForm";
+import DefaultQAForm from "../forms/DefaultQAForm";
 import EW_I1E1Form from "./EW_I1E1Form";
 
 export type TemplateFormProps = {

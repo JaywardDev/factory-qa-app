@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import ProjectList from "./components/ProjectList";
 import CategoryBoard from "./components/CategoryBoard";
 import ComponentList from "./components/ComponentList";
-import DefaultQAForm from "./components/DefaultQAForm";
 import ExportButton from "./components/ExportButton";
 import Modal from "./components/Modal";
 import { seedIfEmpty } from "./lib/seed";
@@ -15,18 +14,37 @@ import {
 
 // main app component with three levels of navigation flow
 export default function App() {
+  const [dataReady, setDataReady] = useState(false);
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
   const [currentType, setCurrentType] = useState<ComponentType | null>(null);
   const [currentComp, setCurrentComp] = useState<Comp | null>(null);
 
   // Route the selected component through the template registry so each modal
   // renders the correct Access-specific QA form.
-  const ActiveTemplateForm = currentComp && currentComp.template_id !== undefined
-    ? TEMPLATE_FORM_REGISTRY[currentComp.template_id] ?? DEFAULT_TEMPLATE_FORM
+  const ActiveTemplateForm = currentComp
+    ? currentComp.template_id
+      ? TEMPLATE_FORM_REGISTRY[currentComp.template_id] ?? DEFAULT_TEMPLATE_FORM
+      : DEFAULT_TEMPLATE_FORM
     : null;
 
   // seed initial data if db is empty
-  useEffect(() => { seedIfEmpty(); }, []);
+  useEffect(() => {
+    let active = true;
+
+    seedIfEmpty()
+      .catch((error) => {
+        console.error("Failed to seed initial data", error);
+      })
+      .finally(() => {
+        if (active) {
+          setDataReady(true);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const handleBackToProjects = () => {
     setCurrentComp(null);
@@ -53,7 +71,7 @@ export default function App() {
       </header>
 
       {!currentProject && (
-        <ProjectList onPick={setCurrentProject} />
+        <ProjectList onPick={setCurrentProject} ready={dataReady} />
       )}
 
       {currentProject && !currentType && (
@@ -80,7 +98,7 @@ export default function App() {
           </h2>
           <button className="btn" onClick={()=> setCurrentComp(null)}>✕ Close</button>
         </div>
-        {currentComp && ActiveTemplateForm && (
+        {ActiveTemplateForm && currentComp && (
           <ActiveTemplateForm component={currentComp} />
         )}
       </Modal>
