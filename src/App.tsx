@@ -19,7 +19,9 @@ export default function App() {
   useEffect(() => { seedIfEmpty(); }, []);
 
   const handleBackToProjects = () => {
+    setCurrentComp(null);
     setCurrentType(null);
+    setCurrentProject(null);
   };
   
   // main render and navigation flow
