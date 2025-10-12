@@ -9,13 +9,16 @@ import { seedIfEmpty } from "./lib/seed";
 import type { Project, Component as Comp, ComponentType } from "./lib/types";
 import "./index.css";
 
+// main app component with three levels of navigation flow
 export default function App() {
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
   const [currentType, setCurrentType] = useState<ComponentType | null>(null);
   const [currentComp, setCurrentComp] = useState<Comp | null>(null);
 
+  // seed initial data if db is empty
   useEffect(() => { seedIfEmpty(); }, []);
 
+  // main render and navigation flow
   return (
     <div className="app">
       <header className="toolbar">
