@@ -30,6 +30,6 @@ export const TYPE_LABEL: Record<ComponentType,string> = {
   ew: 'External Walls',
   iw: 'Internal Walls',
   mf: 'Mid-floors',
-  r:  'Roofs',
-  other: 'Other',
+  r: 'Roofs',
+  other: 'Structures',
 };
