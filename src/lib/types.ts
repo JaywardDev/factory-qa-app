@@ -37,6 +37,7 @@ export type Component = {
   type: 'ew' | 'iw' | 'mf' | 'r' | 'other';  // ew=External Wall, iw=Internal Wall, mf=Mid-floor, r=Roof
   label: string;         // "EW_0001", "IW_1004", "MF_0004", "R_0005"
   qr_code?: string;      // optional; could be just the component id/label
+  template_id?: string;  // Access template identifier (e.g., EW_I1E1)
 };
 
 export type ComponentType = Component['type'];
