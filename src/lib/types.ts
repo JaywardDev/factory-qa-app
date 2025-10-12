@@ -9,22 +9,6 @@ export type Project = {
   end_date?: string;
 };
 
-export type QAForm = {
-  form_id: UUID;
-  project_id: UUID;
-  created_at: string;   // ISO timestamp
-  status: 'draft'|'submitted'|'approved'|'rejected';
-};
-
-export type QAItem = {
-  item_id: UUID;
-  form_id: UUID;
-  checkpoint_text: string;
-  result: 'pass'|'fail'|'na';
-  notes?: string;
-  timestamp: string; // ISO
-};
-
 export type Deck = {
   id: UUID;
   project_id: UUID;
