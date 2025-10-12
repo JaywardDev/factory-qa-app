@@ -36,17 +36,52 @@ export function mapProject(source: ProjectAccess): Project {
   };
 }
 
+function deriveComponentLabel(
+  source: PanelAccess,
+  deckId: string,
+  type: ComponentType,
+): string {
+  const subgroup = source.SubGroup?.trim();
+  const group = source.Group?.trim();
+  const projectNumber = source.ProjectNumber?.trim();
+  const templateId = source.QATemplateID?.trim();
+
+  if (subgroup && group) {
+    return `${group}-${subgroup}`;
+  }
+
+  if (subgroup) {
+    return subgroup;
+  }
+
+  if (group) {
+    return group;
+  }
+
+  if (templateId) {
+    return templateId;
+  }
+
+  if (projectNumber) {
+    return `${projectNumber}-${type}`;
+  }
+
+  return `${deckId}-${type}`;
+}
+
 export function mapPanelToComponent(source: PanelAccess, deckId: string): Component {
   const groupPrefix = extractGroupPrefix(source.Group);
   const type = GROUP_PREFIX_TO_COMPONENT_TYPE[groupPrefix] ?? 'other';
 
-  const label = source.SubGroup?.trim() || source.Group?.trim() || source.ProjectNumber;
+  const label = deriveComponentLabel(source, deckId, type);
+  const templateId = source.QATemplateID?.trim();
 
   return {
     id: label,
     deck_id: deckId,
     type,
     label,
+    template_id: templateId,
   };
 }
 

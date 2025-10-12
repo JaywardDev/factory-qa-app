@@ -2,18 +2,28 @@ import { useEffect, useState } from "react";
 import ProjectList from "./components/ProjectList";
 import CategoryBoard from "./components/CategoryBoard";
 import ComponentList from "./components/ComponentList";
-import QAFormEditor from "./components/QAFormEditor";
+import DefaultQAForm from "./components/DefaultQAForm";
 import ExportButton from "./components/ExportButton";
 import Modal from "./components/Modal";
 import { seedIfEmpty } from "./lib/seed";
 import type { Project, Component as Comp, ComponentType } from "./lib/types";
 import "./index.css";
+import {
+  DEFAULT_TEMPLATE_FORM,
+  TEMPLATE_FORM_REGISTRY,
+} from "./forms/registry";
 
 // main app component with three levels of navigation flow
 export default function App() {
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
   const [currentType, setCurrentType] = useState<ComponentType | null>(null);
   const [currentComp, setCurrentComp] = useState<Comp | null>(null);
+
+  // Route the selected component through the template registry so each modal
+  // renders the correct Access-specific QA form.
+  const ActiveTemplateForm = currentComp && currentComp.template_id !== undefined
+    ? TEMPLATE_FORM_REGISTRY[currentComp.template_id] ?? DEFAULT_TEMPLATE_FORM
+    : null;
 
   // seed initial data if db is empty
   useEffect(() => { seedIfEmpty(); }, []);
@@ -70,7 +80,9 @@ export default function App() {
           </h2>
           <button className="btn" onClick={()=> setCurrentComp(null)}>✕ Close</button>
         </div>
-        <QAFormEditor />
+        {currentComp && ActiveTemplateForm && (
+          <ActiveTemplateForm component={currentComp} />
+        )}
       </Modal>
 
       <div className="app-hint">Projects → Categories → Components → QA (modal)</div>
