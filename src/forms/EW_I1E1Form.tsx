@@ -37,7 +37,7 @@ function renderMultiSelect(name: string, options: string[]) {
         padding: 8,
         border: "1px solid #cbd5e1",
         borderRadius: 6,
-        minHeight: 88,
+        minHeight: 120,
       }}
     >
       {options.map((option) => (
@@ -49,24 +49,44 @@ function renderMultiSelect(name: string, options: string[]) {
   );
 }
 
-const internalLayerComponents = [
+const internalLining = [
   "OSB15",
-  "OSB12",
-  "GN13",
-  "GN15",
-  "GN16",
-  "GB10",
-  "GRB15",
-  "GRB16",
+  "OSB22",
+  "Ply UT 15",
+  "Ply H3 15",
+  "GIB10",
+  "GIB13",
+  "GIB16",
   "Other",
   "Not applicable",
 ];
 
-const internalFixings = [
-  "Drywall screws",
-  "Adhesive",
-  "Foam",
+const externalLining = [
+  "Membrane",
+  "Ply H3 15",
+  "Ply H3 17",
+  "Ply H3 19", 
+  "WEATHERLINE10",
+  "WEATHERLINE13",
+  "GIB13",
+  "GIB16",
+  "Not applicable",
+]
+
+const fixingTreatment = [
+  "Galvanised",
+  "Stainless",
+  "Ceramic Coated",
   "Other",
+  "None",
+];
+
+const fixingTypes = [
+  "Nails",
+  "Screws",
+  "Staples45",
+  "Staples65",
+  "None",
 ];
 
 const externalFixings = [
@@ -115,9 +135,7 @@ export default function EW_I1E1Form({ component }: EW_I1E1FormProps) {
         {[ 
           "Framing check for square",
           "Structural fixing in frame as per drawings",
-          "Sheathing fixed with correct nails",
-          "Fire barriers, fixings and components",
-          "Locations of fire stopping and access provisions",
+          "Slings installed as per drawings",
         ].map((label, index) => (
           <label key={label} style={{ display: "grid", gap: 6 }}>
             <span style={{ fontWeight: 500 }}>{label}</span>
@@ -128,38 +146,59 @@ export default function EW_I1E1Form({ component }: EW_I1E1FormProps) {
 
       <section style={{ display: "grid", gap: 16 }}>
         <h4 style={{ margin: 0, color: "#0f172a" }}>
-          Step 2 – Internal layer – product
+          Step 2 – Internal lining
         </h4>
         <label style={{ display: "grid", gap: 6 }}>
-          <span style={{ fontWeight: 500 }}>Components as per schedule</span>
-          {renderMultiSelect("internal-components", internalLayerComponents)}
+          <span style={{ fontWeight: 500 }}>Lining Type</span>
+          {renderMultiSelect("internal-components", internalLining)}
         </label>
         <label style={{ display: "grid", gap: 6 }}>
           <span style={{ fontWeight: 500 }}>Fixings</span>
-          {renderMultiSelect("internal-fixings", internalFixings)}
+          {renderMultiSelect("internal-fixings", fixingTreatment)}
         </label>
+        <label style={{ display: "grid", gap: 6 }}>
+          <span style={{ fontWeight: 500 }}>Fixing Type</span>
+          {renderMultiSelect("internal-fixing-types", fixingTypes)}
+        </label>
+      </section>
+
+      <section style={{ display: "grid", gap: 16 }}>
+        <h4 style={{ margin: 0, color: "#0f172a" }}>
+          Step 3 – Services
+        </h4>
         {[
-          "Services – first fix sealed, fire box and dust flush boxes",
-          "Services – second fix sealed, fire box and dust flush boxes",
-          "Internal QA checked – plumb, level, expansion, control, penetrations",
+          "Fire rated wall, use fire rated flush boxes. Do not alter flush box position without approval",
+          "Conduits terminated and run to best practice as per drawings",
+          "Airtightness - penetrations are sealed",
+          "Fire rated wall, all penetrations treated as per drawings (i.e. gib lined or so)",
         ].map((label, index) => (
           <label key={label} style={{ display: "grid", gap: 6 }}>
             <span style={{ fontWeight: 500 }}>{label}</span>
             {renderRadioGroup(`step2-${index}`, yesNoOptions)}
           </label>
-        ))}
+        ))}        
       </section>
 
       <section style={{ display: "grid", gap: 16 }}>
         <h4 style={{ margin: 0, color: "#0f172a" }}>
-          Step 3 – Sheathing and structural external
+          Step 4 – Insulation
         </h4>
         <label style={{ display: "grid", gap: 6 }}>
-          <span style={{ fontWeight: 500 }}>Components as per schedule</span>
-          {renderMultiSelect("external-components", internalLayerComponents)}
+          <span style={{ fontWeight: 500 }}>
+            Insulation as per drawings. Tight fit, No gaps, No compression
+          </span>
+          {renderRadioGroup("step4-insulation", yesNoOptions)}
+        </label>
+      </section>
+
+      <section style={{ display: "grid", gap: 16 }}>
+        <h4 style={{ margin: 0, color: "#0f172a" }}>Step 5 – Final stage QA</h4>
+        <label style={{ display: "grid", gap: 6 }}>
+          <span style={{ fontWeight: 500 }}>External Lining</span>
+          {renderMultiSelect("external-components", externalLining)}
         </label>
         <label style={{ display: "grid", gap: 6 }}>
-          <span style={{ fontWeight: 500 }}>Fixings</span>
+          <span style={{ fontWeight: 500 }}>External Fixings</span>
           {renderMultiSelect("external-fixings", externalFixings)}
         </label>
         <label style={{ display: "grid", gap: 6 }}>
@@ -169,23 +208,7 @@ export default function EW_I1E1Form({ component }: EW_I1E1FormProps) {
         <label style={{ display: "grid", gap: 6 }}>
           <span style={{ fontWeight: 500 }}>Membranes as per specification</span>
           {renderMultiSelect("membranes", membraneOptions)}
-        </label>
-      </section>
-
-      <section style={{ display: "grid", gap: 16 }}>
-        <h4 style={{ margin: 0, color: "#0f172a" }}>
-          Step 4 – Finishes and completion
-        </h4>
-        <label style={{ display: "grid", gap: 6 }}>
-          <span style={{ fontWeight: 500 }}>
-            External QA checked – plumb, level, expansion, control, penetrations
-          </span>
-          {renderRadioGroup("step4-qa", yesNoOptions)}
-        </label>
-      </section>
-
-      <section style={{ display: "grid", gap: 16 }}>
-        <h4 style={{ margin: 0, color: "#0f172a" }}>Step 5 – Final stage QA</h4>
+        </label>        
         <label style={{ display: "grid", gap: 6 }}>
           <span style={{ fontWeight: 500 }}>
             Deviation from standard method, team or manufacturer specification
