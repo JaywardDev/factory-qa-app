@@ -5,16 +5,13 @@ export type Project = {
   project_code: string;   // e.g., "230041"
   project_name?: string;  // e.g., "Alpine Homes"
   status?: 'planned'|'active'|'closed';
-  start_date?: string;
-  end_date?: string;
 };
 
-export type Component = {
-  id: UUID;
+export type Panel = {
+  type: 'ew' | 'iw' | 'mf' | 'r' | 'sw';
   project_id: UUID;
-  type: 'ew' | 'iw' | 'mf' | 'r' | 'other';  // ew=External Wall, iw=Internal Wall, mf=Mid-floor, r=Roof
-  group_code: string;     // e.g., "EW_0", "MF_1", "Roof"
-  panel_id: string;       // panel identifier / Access sub group ("EW_0001", "IW_1004", ...)
+  group_code: string;     // e.g., "EW_0", "MF_1", "R_"
+  id: string;       // panel identifier / Access sub group ("001", "004", ...)
   template_id?: string;   // Access template identifier (e.g., EW_I1E1)
 };
 
@@ -32,12 +29,12 @@ export type QAItem = {
   timestamp?: string;
 };
 
-export type ComponentType = Component['type'];
+export type PanelType = Panel['type'];
 
-export const TYPE_LABEL: Record<ComponentType,string> = {
+export const TYPE_LABEL: Record<PanelType,string> = {
   ew: 'External Walls',
   iw: 'Internal Walls',
   mf: 'Mid-floors',
   r: 'Roofs',
-  other: 'Structures & Other',
+  sw: 'Structured Walls',
 };
