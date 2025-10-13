@@ -213,6 +213,53 @@ button:focus-visible {
   color: var(--brand-charcoal);
 }
 
+.component-groups {
+  display: grid;
+  gap: 18px;
+}
+
+.component-group {
+  border: 1px dashed var(--border);
+  border-radius: 16px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.65);
+}
+
+.component-group__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  gap: 12px;
+}
+
+.component-group__header h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.component-group__list {
+  display: grid;
+  gap: 8px;
+}
+
+.component-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  gap: 4px;
+}
+
+.component-item__title {
+  font-weight: 600;
+}
+
+.component-item__meta {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
 /* ---- grid ---- */
 .deck-grid {
   display: grid;

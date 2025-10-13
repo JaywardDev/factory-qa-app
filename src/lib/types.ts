@@ -9,19 +9,27 @@ export type Project = {
   end_date?: string;
 };
 
-export type Deck = {
-  id: UUID;
-  project_id: UUID;
-  name: string;          // "Deck 01", "Deck 02"
-};
-
 export type Component = {
   id: UUID;
-  deck_id: UUID;
+  project_id: UUID;
   type: 'ew' | 'iw' | 'mf' | 'r' | 'other';  // ew=External Wall, iw=Internal Wall, mf=Mid-floor, r=Roof
-  label: string;         // "EW_0001", "IW_1004", "MF_0004", "R_0005"
-  qr_code?: string;      // optional; could be just the component id/label
-  template_id?: string;  // Access template identifier (e.g., EW_I1E1)
+  group_code: string;     // e.g., "EW_0", "MF_1", "Roof"
+  panel_id: string;       // panel identifier / Access sub group ("EW_0001", "IW_1004", ...)
+  template_id?: string;   // Access template identifier (e.g., EW_I1E1)
+};
+
+export type QAForm = {
+  form_id: UUID;
+  project_id: UUID;
+  status?: 'draft' | 'submitted' | 'exported';
+  created_at?: string;
+};
+
+export type QAItem = {
+  item_id: UUID;
+  form_id: UUID;
+  result?: string;
+  timestamp?: string;
 };
 
 export type ComponentType = Component['type'];
@@ -31,5 +39,5 @@ export const TYPE_LABEL: Record<ComponentType,string> = {
   iw: 'Internal Walls',
   mf: 'Mid-floors',
   r: 'Roofs',
-  other: 'Structures',
+  other: 'Structures & Other',
 };

@@ -1,25 +1,34 @@
 import Dexie from 'dexie';
 import type { Table } from 'dexie';
-import type { Project, QAForm, QAItem, Deck, Component } from './types';
+import type { Project, Component } from './types';
 
 class QAAppDB extends Dexie {
   projects!: Table<Project, string>;
-  qa_forms!: Table<QAForm, string>;
-  qa_items!: Table<QAItem, string>;
-  decks!: Table<Deck, string>;          // ⬅ add
   components!: Table<Component, string>; // ⬅ add
 
   constructor() {
     super('qa_app_db');
-    // v1 had projects, qa_forms, qa_items
-    // v2 adds decks, components
+    // v1 only tracked projects
+    // v2 added decks + components
+    // v3 removes decks and moves components under projects with Access-style grouping
     this.version(2).stores({
       projects: 'project_id, project_code, status',
-      qa_forms: 'form_id, project_id, status, created_at',
-      qa_items: 'item_id, form_id, result, timestamp',
       decks: 'id, project_id, name',
       components: 'id, deck_id, type, label'
     });
+
+    this.version(3)
+      .stores({
+        projects: 'project_id, project_code, status',
+        qa_forms: 'form_id, project_id, status, created_at',
+        qa_items: 'item_id, form_id, result, timestamp',
+        decks: null,
+        components: 'id, project_id, type, group_code, panel_id'
+      })
+      .upgrade(async (tx) => {
+        // Clear incompatible v2 component data; new seed will repopulate
+        await tx.table('components').clear();
+      }); 
   }
 }
 

@@ -14,16 +14,9 @@ export default function CategoryBoard({
 }) {
   const [comps, setComps] = useState<Comp[]>([]);
 
-  void onBack; // to avoid eslint no-unused-vars
-
   useEffect(() => {
     (async () => {
-      // fetch all components for this project via its decks
-      const decks = await db.decks.where({ project_id: project.project_id }).toArray();
-      const all: Comp[] = [];
-      for (const d of decks) {
-        all.push(...await db.components.where({ deck_id: d.id }).toArray());
-      }
+      const all = await db.components.where({ project_id: project.project_id }).toArray();
       setComps(all);
     })();
   }, [project.project_id]);

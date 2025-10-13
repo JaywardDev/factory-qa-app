@@ -7,10 +7,7 @@ import Modal from "./components/Modal";
 import { seedIfEmpty } from "./lib/seed";
 import type { Project, Component as Comp, ComponentType } from "./lib/types";
 import "./index.css";
-import {
-  DEFAULT_TEMPLATE_FORM,
-  TEMPLATE_FORM_REGISTRY,
-} from "./forms/registry";
+import { resolveTemplateForm } from "./forms/registry";
 
 // main app component with three levels of navigation flow
 export default function App() {
@@ -22,9 +19,7 @@ export default function App() {
   // Route the selected component through the template registry so each modal
   // renders the correct Access-specific QA form.
   const ActiveTemplateForm = currentComp
-    ? currentComp.template_id
-      ? TEMPLATE_FORM_REGISTRY[currentComp.template_id] ?? DEFAULT_TEMPLATE_FORM
-      : DEFAULT_TEMPLATE_FORM
+    ? resolveTemplateForm(currentComp.template_id)
     : null;
 
   // seed initial data if db is empty
@@ -94,7 +89,9 @@ export default function App() {
       <Modal open={!!currentComp} onClose={()=> setCurrentComp(null)}>
         <div className="modal-head">
           <h2 style={{margin:0}}>
-            {currentComp ? `${currentComp.type.toUpperCase()} ${currentComp.label}` : 'QA Form'}
+            {currentComp
+              ? `${currentComp.group_code} • ${currentComp.panel_id}`
+              : 'QA Form'}
           </h2>
           <button className="btn" onClick={()=> setCurrentComp(null)}>✕ Close</button>
         </div>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { db } from "../lib/db";
-import type { Project, Deck, Component as Comp } from "../lib/types";
+import type { Project, Component as Comp } from "../lib/types";
 
 export default function ProjectHome({
   onPickComponent,
@@ -8,22 +8,22 @@ export default function ProjectHome({
   onPickComponent: (c: Comp) => void;
 }) {
   const [project, setProject] = useState<Project | null>(null);
-  const [decks, setDecks] = useState<Deck[]>([]);
-  const [componentsByDeck, setCBD] = useState<Record<string, Comp[]>>({});
+  const [componentsByGroup, setCBG] = useState<Record<string, Comp[]>>({});
 
   useEffect(() => {
     (async () => {
       const p = (await db.projects.toArray())[0] ?? null;
       setProject(p);
       if (!p) return;
-      const ds = await db.decks.where({ project_id: p.project_id }).toArray();
-      setDecks(ds);
-
-      const map: Record<string, Comp[]> = {};
-      for (const d of ds) {
-        map[d.id] = await db.components.where({ deck_id: d.id }).toArray();
+      const comps = await db.components.where({ project_id: p.project_id }).toArray();
+      const grouped: Record<string, Comp[]> = {};
+      for (const comp of comps) {
+        if (!grouped[comp.group_code]) {
+          grouped[comp.group_code] = [];
+        }
+        grouped[comp.group_code].push(comp);
       }
-      setCBD(map);
+      setCBG(grouped);
     })();
   }, []);
 
@@ -37,23 +37,27 @@ return (
 
     <div className="section">
       <div className="deck-grid">
-        {decks.map((d) => (
-          <div key={d.id} className="card">
-            <h3>{d.name}</h3>
-            <div className="chips">
-              {(componentsByDeck[d.id] ?? []).map((c) => (
-                <button
-                  key={c.id}
-                  className="chip"
-                  title={`${c.type.toUpperCase()} ${c.label}`}
-                  onClick={() => onPickComponent(c)}
-                >
-                  {c.type.toUpperCase()} {c.label}
-                </button>
-              ))}
+        {Object.entries(componentsByGroup)
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(([group, comps]) => (
+            <div key={group} className="card">
+              <h3>{group}</h3>
+              <div className="chips">
+                {comps
+                  .sort((a, b) => a.panel_id.localeCompare(b.panel_id))
+                  .map((c) => (
+                    <button
+                      key={c.id}
+                      className="chip"
+                      title={`${c.type.toUpperCase()} ${c.panel_id}`}
+                      onClick={() => onPickComponent(c)}
+                    >
+                      {c.type.toUpperCase()} {c.panel_id}
+                    </button>
+                  ))}
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
       </div>
     </div>
   </div>
