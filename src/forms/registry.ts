@@ -16,3 +16,17 @@ export const TEMPLATE_FORM_REGISTRY: Record<string, TemplateFormComponent> = {
 };
 
 export const DEFAULT_TEMPLATE_FORM: TemplateFormComponent = DefaultQAForm;
+
+const normalizeTemplateId = (templateId?: string) =>
+  templateId?.trim().toUpperCase() ?? null;
+
+export const resolveTemplateForm = (
+  templateId?: string,
+): TemplateFormComponent => {
+  const normalized = normalizeTemplateId(templateId);
+  if (!normalized) {
+    return DEFAULT_TEMPLATE_FORM;
+  }
+
+  return TEMPLATE_FORM_REGISTRY[normalized] ?? DEFAULT_TEMPLATE_FORM;
+};
