@@ -33,7 +33,7 @@ export default function ComponentList({
   return (
     <div className="card">
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8}}>
-        <h2 style={{margin:0}}>Components — {type.toUpperCase()}</h2>
+        <h2 style={{margin:0}}>{type.toUpperCase()}</h2>
         <button className="btn" onClick={onBack}>← Back</button>
       </div>
       <div style={{display:'flex', flexDirection:'column', gap:8}}>
@@ -43,8 +43,7 @@ export default function ComponentList({
             className="btn"
             style={{textAlign:'left'}}
             onClick={()=> onPickComponent(c)}>
-            <div style={{fontWeight:600}}>{c.group_code}</div>
-            <div style={{color:'#475569'}}>{c.panel_id ?? c.id}</div>
+            <div style={{color:'#475569', fontWeight:600, fontSize: 20}}>{c.panel_id ?? c.id}</div>
           </button>
         ))}
         {items.length === 0 && <div style={{color:'#64748b'}}>No components.</div>}

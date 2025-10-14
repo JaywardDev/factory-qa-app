@@ -18,8 +18,7 @@ function renderRadioGroup(
       {options.map((option) => (
         <label
           key={option.value}
-          style={{ display: "flex", alignItems: "center", gap: 4 }}
-        >
+          style={{ display: "flex", alignItems: "center", gap: 4 }}>
           <input type="radio" name={name} value={option.value} />
           {option.label}
         </label>
@@ -38,8 +37,7 @@ function renderMultiSelect(name: string, options: string[]) {
         border: "1px solid #cbd5e1",
         borderRadius: 6,
         minHeight: 120,
-      }}
-    >
+      }}>
       {options.map((option) => (
         <option key={option} value={option.toLowerCase().replace(/\s+/g, "-")}>
           {option}
@@ -121,9 +119,9 @@ export default function EW_I1E1Form({ component }: EW_I1E1FormProps) {
       }}
     >
       <header style={{ display: "grid", gap: 4 }}>
-        <h3 style={{ margin: 0 }}>EW_I1E1 External Wall QA</h3>
+        <h3 style={{ margin: 0 }}>External Wall QA</h3>
         <p style={{ margin: 0, color: "#475569", fontSize: 14 }}>
-          Record inspection results for {component.group} • {component.panel_id}. Complete the checks
+          Record inspection results for {component.panel_id ?? component.id}. Complete the checks
           for the internal and external layers in sequence.
         </p>
       </header>
