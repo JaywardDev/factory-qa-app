@@ -1,5 +1,5 @@
 import { db } from './db';
-import type { Project, Component } from './types';
+import type { Project, Panel } from './types';
 
 const uuid = () => crypto.randomUUID();
 
@@ -245,7 +245,7 @@ const componentSource: Array<{ group: string; panel: string; template: string }>
   { group: 'LP', panel: 'LP_09', template: 'LP_1' },
 ];
 
-const inferTypeFromGroup = (group: string): Component['type'] => {
+const inferTypeFromGroup = (group: string): Panel['type'] => {
   const normalized = group.toLowerCase();
   if (normalized.startsWith('ew')) return 'ew';
   if (normalized.startsWith('iw')) return 'iw';
@@ -253,7 +253,7 @@ const inferTypeFromGroup = (group: string): Component['type'] => {
   if (normalized.startsWith('roof') || normalized === 'roof' || normalized.startsWith('r_')) {
     return 'r';
   }
-  return 'other';
+  return 'sw';
 };
 
 export async function seedIfEmpty() {
@@ -267,7 +267,6 @@ export async function seedIfEmpty() {
         project_code: '230041',
         project_name: 'Alpine Residences Jacks Point — Alpine Block 4B (PS114)',
         status: 'active',
-        start_date: new Date().toISOString().slice(0, 10),
       } satisfies Project;
       await db.projects.add(project);
     } else if (projects.length > 1) {
@@ -286,11 +285,10 @@ export async function seedIfEmpty() {
       .count();
 
     if (componentCount === 0) {
-      const components: Component[] = componentSource.map(({ group, panel, template }) => ({
-        id: uuid(),
+      const components: Panel[] = componentSource.map(({ group, panel, template }) => ({
         project_id: project!.project_id,
         type: inferTypeFromGroup(group),
-        group_code: group,
+        group: group,
         panel_id: panel,
         template_id: template,
       }));

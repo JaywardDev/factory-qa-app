@@ -1,7 +1,7 @@
-import type { Component } from "../lib/types";
+import type { Panel } from "../lib/types";
 
 export type DefaultQAFormProps = {
-  component: Component;
+  component: Panel;
 };
 
 export default function DefaultQAForm({ component }: DefaultQAFormProps) {
@@ -19,7 +19,7 @@ export default function DefaultQAForm({ component }: DefaultQAFormProps) {
     >
       <h3 style={{ margin: 0 }}>QA template coming soon</h3>
       <p style={{ margin: 0, color: "#475569", lineHeight: 1.6 }}>
-        {component.group_code} • {component.panel_id} is not yet linked to a
+        {component.group} • {component.panel_id} is not yet linked to a
         specific QA template in the system. You can close this dialog and select
         another component, or add the template mapping in the registry when it
         becomes available.

@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { db } from "../lib/db";
-import type { Project, Component as Comp, ComponentType } from "../lib/types";
+import type { Project, Panel, PanelType} from "../lib/types";
 import { TYPE_LABEL } from "../lib/types";
 
 export default function CategoryBoard({
@@ -9,10 +9,10 @@ export default function CategoryBoard({
   onBack,
 }: {
   project: Project;
-  onPickCategory: (t: ComponentType) => void;
+  onPickCategory: (t: PanelType) => void;
   onBack: () => void;
 }) {
-  const [comps, setComps] = useState<Comp[]>([]);
+  const [comps, setComps] = useState<Panel[]>([]);
 
   useEffect(() => {
     (async () => {
@@ -22,24 +22,21 @@ export default function CategoryBoard({
   }, [project.project_id]);
 
   const counts = useMemo(() => {
-    const c: Record<ComponentType, number> = {
-      ew: 0,
-      iw: 0,
-      mf: 0,
-      r: 0,
-      other: 0,
-    };
+    const base = Object.keys(TYPE_LABEL).reduce((acc, key) => {
+      acc[key as PanelType] = 0;
+      return acc;
+    }, {} as Record<PanelType, number>);
 
-    for (const x of comps) {
-      const type = (x.type as ComponentType) ?? "other";
-      if (type in c) {
-        c[type] += 1;
+    for (const panel of comps) {
+      const type = panel.type as PanelType;
+      if (type in base) {
+        base[type] += 1;
       }
     }
-    return c;
+    return base;
   }, [comps]);
 
-  const cats = (Object.keys(counts) as ComponentType[])
+  const cats = (Object.keys(counts) as PanelType[])
     .filter(t => counts[t] > 0);
 
   return (

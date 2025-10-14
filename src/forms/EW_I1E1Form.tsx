@@ -1,7 +1,7 @@
-import type { Component } from "../lib/types";
+import type { Panel } from "../lib/types";
 
 type EW_I1E1FormProps = {
-  component: Component;
+  component: Panel;
 };
 
 const yesNoOptions = [
@@ -123,7 +123,7 @@ export default function EW_I1E1Form({ component }: EW_I1E1FormProps) {
       <header style={{ display: "grid", gap: 4 }}>
         <h3 style={{ margin: 0 }}>EW_I1E1 External Wall QA</h3>
         <p style={{ margin: 0, color: "#475569", fontSize: 14 }}>
-          Record inspection results for {component.group_code} • {component.panel_id}. Complete the checks
+          Record inspection results for {component.group} • {component.panel_id}. Complete the checks
           for the internal and external layers in sequence.
         </p>
       </header>

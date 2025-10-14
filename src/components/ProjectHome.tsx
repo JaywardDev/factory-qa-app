@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
 import { db } from "../lib/db";
-import type { Project, Component as Comp } from "../lib/types";
+import type { Project, Panel } from "../lib/types";
 
 export default function ProjectHome({
   onPickComponent,
 }: {
-  onPickComponent: (c: Comp) => void;
+  onPickComponent: (c: Panel) => void;
 }) {
   const [project, setProject] = useState<Project | null>(null);
-  const [componentsByGroup, setCBG] = useState<Record<string, Comp[]>>({});
+  const [componentsByGroup, setCBG] = useState<Record<string, Panel[]>>({});
 
   useEffect(() => {
     (async () => {
@@ -16,12 +16,12 @@ export default function ProjectHome({
       setProject(p);
       if (!p) return;
       const comps = await db.components.where({ project_id: p.project_id }).toArray();
-      const grouped: Record<string, Comp[]> = {};
+      const grouped: Record<string, Panel[]> = {};
       for (const comp of comps) {
-        if (!grouped[comp.group_code]) {
-          grouped[comp.group_code] = [];
+        if (!grouped[comp.group]) {
+          grouped[comp.group] = [];
         }
-        grouped[comp.group_code].push(comp);
+        grouped[comp.group].push(comp);
       }
       setCBG(grouped);
     })();
@@ -47,7 +47,7 @@ return (
                   .sort((a, b) => a.panel_id.localeCompare(b.panel_id))
                   .map((c) => (
                     <button
-                      key={c.id}
+                      key={c.panel_id}
                       className="chip"
                       title={`${c.type.toUpperCase()} ${c.panel_id}`}
                       onClick={() => onPickComponent(c)}

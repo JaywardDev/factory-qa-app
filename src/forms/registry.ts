@@ -1,10 +1,10 @@
 import type { ComponentType } from "react";
-import type { Component } from "../lib/types";
+import type { Panel } from "../lib/types";
 import DefaultQAForm from "../forms/DefaultQAForm";
 import EW_I1E1Form from "./EW_I1E1Form";
 
 export type TemplateFormProps = {
-  component: Component;
+  component: Panel;
 };
 
 export type TemplateFormComponent = ComponentType<TemplateFormProps>;
