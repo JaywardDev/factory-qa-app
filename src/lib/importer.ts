@@ -4,7 +4,7 @@ import { deriveIdFromPanelCode, inferTypeFromGroupCode } from './panel-helpers';
 import type { Panel, Project } from './types';
 
 type ImportSchema = {
-  schema_version: number;
+  schema_version?: unknown;
   project?: Partial<Project> & {
     project_id?: string | null;
     project_code?: string | null;
@@ -31,6 +31,7 @@ export type ImportAnalysis = {
   normalizedComponents: NormalizedComponent[];
   warnings: ImportIssue[];
   errors: ImportIssue[];
+  effectiveSchemaVersion: number | null;
   stats: {
     totalComponents: number;
     uniqueComponents: number;
@@ -53,7 +54,7 @@ const readSchema = (content: string, errors: ImportIssue[]): ImportSchema | null
   try {
     const parsed = JSON.parse(content) as ImportSchema;
     return parsed;
-  } catch (error) {
+  } catch {
     errors.push(toImportIssue('Invalid JSON file. Unable to parse.', 'file'));
     return null;
   }
@@ -176,18 +177,55 @@ export const analyzeImportFile = (content: string): ImportAnalysis => {
       normalizedComponents: [],
       warnings,
       errors,
+      effectiveSchemaVersion: null,
       stats: { totalComponents: 0, uniqueComponents: 0, duplicateComponents: 0 },
     };
   }
 
-  if (typeof schema.schema_version !== 'number') {
-    errors.push(
-      toImportIssue('Missing schema_version number in import file.', 'schema_version'),
+  let effectiveSchemaVersion: number | null = null;
+  const rawSchemaVersion = schema.schema_version;
+
+  if (rawSchemaVersion === undefined || rawSchemaVersion === null) {
+    effectiveSchemaVersion = SUPPORTED_SCHEMA_VERSION;
+    warnings.push(
+      toImportIssue('schema_version missing; assuming 1.', 'schema_version'),
     );
-  } else if (schema.schema_version !== SUPPORTED_SCHEMA_VERSION) {
+  } else if (typeof rawSchemaVersion === 'number') {
+    effectiveSchemaVersion = rawSchemaVersion;
+  } else if (typeof rawSchemaVersion === 'string') {
+    const parsed = Number(rawSchemaVersion.trim());
+    if (Number.isFinite(parsed)) {
+      effectiveSchemaVersion = parsed;
+      warnings.push(
+        toImportIssue(
+          `schema_version was a string; treated as number ${parsed}.`,
+          'schema_version',
+        ),
+      );
+    } else {
+      errors.push(
+        toImportIssue(
+          'Invalid schema_version value in import file. Expected a numeric value.',
+          'schema_version',
+        ),
+      );
+    }
+  } else {
     errors.push(
       toImportIssue(
-        `Unsupported schema_version ${schema.schema_version}. Expected ${SUPPORTED_SCHEMA_VERSION}.`,
+        'Invalid schema_version value in import file. Expected a numeric value.',
+        'schema_version',
+      ),
+    );
+  }
+
+  if (
+    effectiveSchemaVersion !== null &&
+    effectiveSchemaVersion !== SUPPORTED_SCHEMA_VERSION
+  ) {
+    errors.push(
+      toImportIssue(
+        `Unsupported schema_version ${effectiveSchemaVersion}. Expected ${SUPPORTED_SCHEMA_VERSION}.`,
         'schema_version',
       ),
     );
@@ -238,6 +276,7 @@ export const analyzeImportFile = (content: string): ImportAnalysis => {
     normalizedComponents,
     warnings,
     errors,
+    effectiveSchemaVersion,
     stats,
   };
 };
