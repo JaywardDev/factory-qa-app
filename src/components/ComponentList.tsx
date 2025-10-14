@@ -23,7 +23,7 @@ export default function ComponentList({
         if (groupComparison !== 0) {
           return groupComparison;
         }
-        return a.id.localeCompare(b.id);
+        return (a.panel_id ?? a.id).localeCompare(b.panel_id ?? b.id);
       });
 
       setItems(sorted);
@@ -39,12 +39,12 @@ export default function ComponentList({
       <div style={{display:'flex', flexDirection:'column', gap:8}}>
         {items.map(c => (
           <button
-            key={`${c.group}-${c.panel_id}`}
+            key={`${c.project_id}-${c.group_code}-${c.id}`}
             className="btn"
             style={{textAlign:'left'}}
             onClick={()=> onPickComponent(c)}>
-            <div style={{fontWeight:600}}>{c.group}</div>
-            <div style={{color:'#475569'}}>{c.panel_id}</div>
+            <div style={{fontWeight:600}}>{c.group_code}</div>
+            <div style={{color:'#475569'}}>{c.panel_id ?? c.id}</div>
           </button>
         ))}
         {items.length === 0 && <div style={{color:'#64748b'}}>No components.</div>}

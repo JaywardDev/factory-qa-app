@@ -5,7 +5,7 @@ import ComponentList from "./components/ComponentList";
 import ExportButton from "./components/ExportButton";
 import Modal from "./components/Modal";
 import { seedIfEmpty } from "./lib/seed";
-import type { Project, Component as Comp, ComponentType } from "./lib/types";
+import type { Project, Panel, PanelType } from "./lib/types";
 import "./index.css";
 import { resolveTemplateForm } from "./forms/registry";
 
@@ -13,8 +13,8 @@ import { resolveTemplateForm } from "./forms/registry";
 export default function App() {
   const [dataReady, setDataReady] = useState(false);
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
-  const [currentType, setCurrentType] = useState<ComponentType | null>(null);
-  const [currentComp, setCurrentComp] = useState<Comp | null>(null);
+  const [currentType, setCurrentType] = useState<PanelType | null>(null);
+  const [currentComp, setCurrentComp] = useState<Panel | null>(null);
 
   // Route the selected component through the template registry so each modal
   // renders the correct Access-specific QA form.
@@ -90,7 +90,7 @@ export default function App() {
         <div className="modal-head">
           <h2 style={{margin:0}}>
             {currentComp
-              ? `${currentComp.group_code} • ${currentComp.panel_id}`
+              ? `${currentComp.group_code} • ${currentComp.panel_id ?? currentComp.id}`
               : 'QA Form'}
           </h2>
           <button className="btn" onClick={()=> setCurrentComp(null)}>✕ Close</button>
