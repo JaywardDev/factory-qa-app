@@ -207,23 +207,12 @@ export default function EW_I1E1Form({ component }: EW_I1E1FormProps) {
           <span style={{ fontWeight: 500 }}>Membranes as per specification</span>
           {renderMultiSelect("membranes", membraneOptions)}
         </label>        
-        <label style={{ display: "grid", gap: 6 }}>
-          <span style={{ fontWeight: 500 }}>
-            Deviation from standard method, team or manufacturer specification
-          </span>
-          <textarea
-            name="deviation-notes"
-            rows={3}
-            placeholder="Describe any deviations"
-            style={{
-              width: "100%",
-              padding: 8,
-              border: "1px solid #cbd5e1",
-              borderRadius: 6,
-              resize: "vertical",
-            }}
-          />
-        </label>
+      </section>
+
+            <section style={{ display: "grid", gap: 16 }}>
+        <h4 style={{ margin: 0, color: "#0f172a" }}>
+          Step 6 – Sign-off
+        </h4>
         <label style={{ display: "grid", gap: 6 }}>
           <span style={{ fontWeight: 500 }}>Comments</span>
           <textarea
@@ -252,7 +241,7 @@ export default function EW_I1E1Form({ component }: EW_I1E1FormProps) {
               borderRadius: 6,
             }}
           />
-        </label>
+        </label>        
       </section>
 
       <button
