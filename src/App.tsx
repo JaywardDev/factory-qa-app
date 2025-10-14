@@ -3,6 +3,7 @@ import ProjectList from "./components/ProjectList";
 import CategoryBoard from "./components/CategoryBoard";
 import ComponentList from "./components/ComponentList";
 import ExportButton from "./components/ExportButton";
+import ImportProjectButton from "./components/ImportProjectButton";
 import Modal from "./components/Modal";
 import { seedIfEmpty } from "./lib/seed";
 import type { Project, Panel, PanelType } from "./lib/types";
@@ -62,7 +63,10 @@ export default function App() {
             <span className="brand-tagline">Factory QA Sheet</span>
           </div>
         </div>
-        <ExportButton />
+        <div className="toolbar-actions">
+          <ImportProjectButton />
+          <ExportButton />
+        </div>
       </header>
 
       {!currentProject && (

@@ -1,4 +1,5 @@
 import { db } from './db';
+import { inferTypeFromGroupCode } from './panel-helpers';
 import type { Project, Panel } from './types';
 
 const uuid = () => crypto.randomUUID();
@@ -124,18 +125,6 @@ const extractPanelSuffix = (panel: string, group_code: string): string => {
 
   return candidate;
 };
-
-const inferTypeFromGroupCode = (group_code: string): Panel['type'] => {
-  const normalized = group_code.toLowerCase();
-  if (normalized.startsWith('ew')) return 'ew';
-  if (normalized.startsWith('iw')) return 'iw';
-  if (normalized.startsWith('mf')) return 'mf';
-  if (normalized.startsWith('roof') || normalized === 'roof' || normalized.startsWith('r_')) {
-    return 'r';
-  }
-  return 'sw';
-};
-
 
 export async function seedIfEmpty() {
   await db.transaction('rw', db.projects, db.components, async () => {
