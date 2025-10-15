@@ -1,5 +1,5 @@
-import { useState } from "react";
-import type { FormEvent, ReactNode } from "react";
+import { useMemo, useRef, useState } from "react";
+import type { ChangeEvent, FormEvent, ReactNode } from "react";
 import type { Panel } from "../lib/types";
 
 type EW_I1E1FormProps = {
@@ -116,132 +116,141 @@ const membraneOptions = [
 ];
 
 export default function EW_I1E1Form({ component }: EW_I1E1FormProps) {
-    const [currentStep, setCurrentStep] = useState(0);
-  const [signOffs, setSignOffs] = useState<string[]>(Array(6).fill(""));
-  const [signOffErrors, setSignOffErrors] = useState<boolean[]>(
-    Array(6).fill(false),
+  const steps = useMemo<StepConfig[]>(
+    () => [
+      {
+        title: "Step 1 – Framing and inside layers",
+        render: () => (
+          <div style={{ display: "grid", gap: 16 }}>
+            {[
+              "Framing check for square",
+              "Structural fixing in frame as per drawings",
+              "Slings installed as per drawings",
+            ].map((label, index) => (
+              <label key={label} style={{ display: "grid", gap: 6 }}>
+                <span style={{ fontWeight: 500 }}>{label}</span>
+                {renderRadioGroup(`step1-check-${index}`, yesNoOptions)}
+              </label>
+            ))}
+          </div>
+        ),
+        signOffLabel: "Step 1 completed by",
+      },
+      {
+        title: "Step 2 – Internal lining",
+        render: () => (
+          <div style={{ display: "grid", gap: 16 }}>
+            <label style={{ display: "grid", gap: 6 }}>
+              <span style={{ fontWeight: 500 }}>Lining Type</span>
+              {renderMultiSelect("internal-components", internalLining)}
+            </label>
+            <label style={{ display: "grid", gap: 6 }}>
+              <span style={{ fontWeight: 500 }}>Fixings</span>
+              {renderMultiSelect("internal-fixings", fixingTreatment)}
+            </label>
+            <label style={{ display: "grid", gap: 6 }}>
+              <span style={{ fontWeight: 500 }}>Fixing Type</span>
+              {renderMultiSelect("internal-fixing-types", fixingTypes)}
+            </label>
+          </div>
+        ),
+        signOffLabel: "Step 2 completed by",
+      },
+      {
+        title: "Step 3 – Services",
+        render: () => (
+          <div style={{ display: "grid", gap: 16 }}>
+            {[
+              "Fire rated wall, use fire rated flush boxes. Do not alter flush box position without approval",
+              "Conduits terminated and run to best practice as per drawings",
+              "Airtightness - penetrations are sealed",
+              "Fire rated wall, all penetrations treated as per drawings (i.e. gib lined or so)",
+            ].map((label, index) => (
+              <label key={label} style={{ display: "grid", gap: 6 }}>
+                <span style={{ fontWeight: 500 }}>{label}</span>
+                {renderRadioGroup(`step3-check-${index}`, yesNoOptions)}
+              </label>
+            ))}
+          </div>
+        ),
+        signOffLabel: "Step 3 completed by",
+      },
+      {
+        title: "Step 4 – Insulation",
+        render: () => (
+          <div style={{ display: "grid", gap: 16 }}>
+            <label style={{ display: "grid", gap: 6 }}>
+              <span style={{ fontWeight: 500 }}>
+                Insulation as per drawings. Tight fit, No gaps, No compression
+              </span>
+              {renderRadioGroup("step4-insulation", yesNoOptions)}
+            </label>
+          </div>
+        ),
+        signOffLabel: "Step 4 completed by",
+      },
+      {
+        title: "Step 5 – Final stage QA",
+        render: () => (
+          <div style={{ display: "grid", gap: 16 }}>
+            <label style={{ display: "grid", gap: 6 }}>
+              <span style={{ fontWeight: 500 }}>External Lining</span>
+              {renderMultiSelect("external-components", externalLining)}
+            </label>
+            <label style={{ display: "grid", gap: 6 }}>
+              <span style={{ fontWeight: 500 }}>External Fixings</span>
+              {renderMultiSelect("external-fixings", externalFixings)}
+            </label>
+            <label style={{ display: "grid", gap: 6 }}>
+              <span style={{ fontWeight: 500 }}>Services – final fix</span>
+              {renderRadioGroup("step5-services", yesNoOptions)}
+            </label>
+            <label style={{ display: "grid", gap: 6 }}>
+              <span style={{ fontWeight: 500 }}>Membranes as per specification</span>
+              {renderMultiSelect("membranes", membraneOptions)}
+            </label>
+          </div>
+        ),
+        signOffLabel: "Step 5 completed by",
+      },
+      {
+        title: "Step 6 – Sign-off",
+        render: () => (
+          <div style={{ display: "grid", gap: 16 }}>
+            <label style={{ display: "grid", gap: 6 }}>
+              <span style={{ fontWeight: 500 }}>Comments</span>
+              <textarea
+                name="comments"
+                rows={3}
+                placeholder="Add additional comments"
+                style={{
+                  width: "100%",
+                  padding: 8,
+                  border: "1px solid #cbd5e1",
+                  borderRadius: 6,
+                  resize: "vertical",
+                }}
+              />
+            </label>
+          </div>
+        ),
+        signOffLabel: "Final sign-off (Shift Leader)",
+      },
+    ],
+    [],
   );
 
-  const steps: StepConfig[] = [
-    {
-      title: "Step 1 – Framing and inside layers",
-      render: () => (
-        <div style={{ display: "grid", gap: 16 }}>
-          {[
-            "Framing check for square",
-            "Structural fixing in frame as per drawings",
-            "Slings installed as per drawings",
-          ].map((label, index) => (
-            <label key={label} style={{ display: "grid", gap: 6 }}>
-              <span style={{ fontWeight: 500 }}>{label}</span>
-              {renderRadioGroup(`step1-check-${index}`, yesNoOptions)}
-            </label>
-          ))}
-        </div>
-      ),
-      signOffLabel: "Step 1 completed by",
-    },
-    {
-      title: "Step 2 – Internal lining",
-      render: () => (
-        <div style={{ display: "grid", gap: 16 }}>
-          <label style={{ display: "grid", gap: 6 }}>
-            <span style={{ fontWeight: 500 }}>Lining Type</span>
-            {renderMultiSelect("internal-components", internalLining)}
-          </label>
-          <label style={{ display: "grid", gap: 6 }}>
-            <span style={{ fontWeight: 500 }}>Fixings</span>
-            {renderMultiSelect("internal-fixings", fixingTreatment)}
-          </label>
-          <label style={{ display: "grid", gap: 6 }}>
-            <span style={{ fontWeight: 500 }}>Fixing Type</span>
-            {renderMultiSelect("internal-fixing-types", fixingTypes)}
-          </label>
-        </div>
-      ),
-      signOffLabel: "Step 2 completed by",
-    },
-    {
-      title: "Step 3 – Services",
-      render: () => (
-        <div style={{ display: "grid", gap: 16 }}>
-          {[
-            "Fire rated wall, use fire rated flush boxes. Do not alter flush box position without approval",
-            "Conduits terminated and run to best practice as per drawings",
-            "Airtightness - penetrations are sealed",
-            "Fire rated wall, all penetrations treated as per drawings (i.e. gib lined or so)",
-          ].map((label, index) => (
-            <label key={label} style={{ display: "grid", gap: 6 }}>
-              <span style={{ fontWeight: 500 }}>{label}</span>
-              {renderRadioGroup(`step3-check-${index}`, yesNoOptions)}
-            </label>
-          ))}
-        </div>
-      ),
-      signOffLabel: "Step 3 completed by",
-    },
-    {
-      title: "Step 4 – Insulation",
-      render: () => (
-        <div style={{ display: "grid", gap: 16 }}>
-          <label style={{ display: "grid", gap: 6 }}>
-            <span style={{ fontWeight: 500 }}>
-              Insulation as per drawings. Tight fit, No gaps, No compression
-            </span>
-            {renderRadioGroup("step4-insulation", yesNoOptions)}
-          </label>
-        </div>
-      ),
-      signOffLabel: "Step 4 completed by",
-    },
-    {
-      title: "Step 5 – Final stage QA",
-      render: () => (
-        <div style={{ display: "grid", gap: 16 }}>
-          <label style={{ display: "grid", gap: 6 }}>
-            <span style={{ fontWeight: 500 }}>External Lining</span>
-            {renderMultiSelect("external-components", externalLining)}
-          </label>
-          <label style={{ display: "grid", gap: 6 }}>
-            <span style={{ fontWeight: 500 }}>External Fixings</span>
-            {renderMultiSelect("external-fixings", externalFixings)}
-          </label>
-          <label style={{ display: "grid", gap: 6 }}>
-            <span style={{ fontWeight: 500 }}>Services – final fix</span>
-            {renderRadioGroup("step5-services", yesNoOptions)}
-          </label>
-          <label style={{ display: "grid", gap: 6 }}>
-            <span style={{ fontWeight: 500 }}>Membranes as per specification</span>
-            {renderMultiSelect("membranes", membraneOptions)}
-          </label>
-        </div>
-      ),
-      signOffLabel: "Step 5 completed by",
-    },
-    {
-      title: "Step 6 – Sign-off",
-      render: () => (
-        <div style={{ display: "grid", gap: 16 }}>
-          <label style={{ display: "grid", gap: 6 }}>
-            <span style={{ fontWeight: 500 }}>Comments</span>
-            <textarea
-              name="comments"
-              rows={3}
-              placeholder="Add additional comments"
-              style={{
-                width: "100%",
-                padding: 8,
-                border: "1px solid #cbd5e1",
-                borderRadius: 6,
-                resize: "vertical",
-              }}
-            />
-          </label>
-        </div>
-      ),
-      signOffLabel: "Final sign-off (Shift Leader)",
-    },
-  ];
+  const [currentStep, setCurrentStep] = useState(0);
+  const [signOffs, setSignOffs] = useState<string[]>(
+    () => Array(steps.length).fill(""),
+  );
+  const [signOffErrors, setSignOffErrors] = useState<boolean[]>(
+    () => Array(steps.length).fill(false),
+  );
+  const [photos, setPhotos] = useState<(string | null)[]>(
+    () => Array(steps.length).fill(null),
+  );
+  const fileInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const currentConfig = steps[currentStep];
 
@@ -271,6 +280,37 @@ export default function EW_I1E1Form({ component }: EW_I1E1FormProps) {
     setSignOffErrors((prev) => {
       const next = [...prev];
       next[currentStep] = false;
+      return next;
+    });
+  };
+
+  const handlePhotoInput = (
+    index: number,
+    event: ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setPhotos((prev) => {
+        const next = [...prev];
+        next[index] = typeof reader.result === "string" ? reader.result : null;
+        return next;
+      });
+    };
+    reader.readAsDataURL(file);
+
+    // reset input so the same file can be selected again if needed
+    event.target.value = "";
+  };
+
+  const clearPhoto = (index: number) => {
+    setPhotos((prev) => {
+      const next = [...prev];
+      next[index] = null;
       return next;
     });
   };
@@ -312,6 +352,74 @@ export default function EW_I1E1Form({ component }: EW_I1E1FormProps) {
         <h4 style={{ margin: 0, color: "#0f172a" }}>{currentConfig.title}</h4>
         {currentConfig.render()}
         <div style={{ display: "grid", gap: 8 }}>
+          <div style={{ display: "grid", gap: 6 }}>
+            <input
+              ref={(element) => {
+                fileInputRefs.current[currentStep] = element;
+              }}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              onChange={(event) => handlePhotoInput(currentStep, event)}
+              style={{ display: "none" }}
+            />
+            <div style={{ display: "in-line", gap: 8 }}>
+              <button
+                type="button"
+                onClick={() => fileInputRefs.current[currentStep]?.click()}
+                style={{
+                  padding: "10px 16px",
+                  borderRadius: 8,
+                  border: "1px solid #0ea5e9",
+                  background: "#e0f2fe",
+                  color: "#0369a1",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  justifySelf: "start",
+                }}
+              >
+                {photos[currentStep] ? "Retake photo" : "Take photo"}
+              </button>
+              {photos[currentStep] && (
+                <div
+                  style={{
+                    display: "grid",
+                    gap: 8,
+                    border: "1px solid #cbd5e1",
+                    borderRadius: 8,
+                    padding: 12,
+                    background: "#f8fafc",
+                  }}
+                >
+                  <img
+                    src={photos[currentStep] ?? undefined}
+                    alt={`Step ${currentStep + 1} capture`}
+                    style={{
+                      width: "100%",
+                      maxHeight: 200,
+                      objectFit: "cover",
+                      borderRadius: 6,
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => clearPhoto(currentStep)}
+                    style={{
+                      padding: "8px 12px",
+                      borderRadius: 6,
+                      border: "1px solid #cbd5e1",
+                      background: "#fff",
+                      color: "#0f172a",
+                      cursor: "pointer",
+                      justifySelf: "start",
+                    }}
+                  >
+                    Remove photo
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
           <label style={{ display: "grid", gap: 6 }}>
             <span style={{ fontWeight: 500 }}>{currentConfig.signOffLabel}</span>
             <input
@@ -336,7 +444,8 @@ export default function EW_I1E1Form({ component }: EW_I1E1FormProps) {
         </div>      
       </section>
 
-      <div style={{ display: "flex", gap: 12 }}>
+      <div style={{ display: "flex", gap: 12 }}>         
+
         {currentStep > 0 && (
           <button
             type="button"
