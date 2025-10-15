@@ -89,6 +89,167 @@ const derivePanelIdFromWpGuid = (wpGuid: string): string | null => {
   return normalized;
 };
 
+const isWpGuidKey = (key: string): boolean => key.toLowerCase() === 'wp_guid';
+
+const extractProjectCodeFromWpGuid = (wpGuid: string): string | null => {
+  const normalized = wpGuid.trim();
+  if (!normalized) {
+    return null;
+  }
+
+  const match = normalized.match(/^(\d{3,})[-_].+$/);
+  return match?.[1] ?? null;
+};
+
+type DerivedProjectInfo = {
+  projectCode: string;
+  projectId: string;
+  conflictingCodes: string[];
+};
+
+const formatProjectCodes = (info: DerivedProjectInfo): string =>
+  [info.projectCode, ...info.conflictingCodes].join(', ');
+
+const deriveProjectInfoFromWpGuids = (wpGuids: string[]): DerivedProjectInfo | null => {
+  if (wpGuids.length === 0) {
+    return null;
+  }
+
+  const codes = Array.from(
+    new Set(
+      wpGuids
+        .map(extractProjectCodeFromWpGuid)
+        .filter((value): value is string => Boolean(value)),
+    ),
+  );
+
+  if (codes.length === 0) {
+    return null;
+  }
+
+  const [projectCode, ...conflictingCodes] = codes;
+
+  return {
+    projectCode,
+    projectId: `derived-${projectCode}`,
+    conflictingCodes,
+  } satisfies DerivedProjectInfo;
+};
+
+const discoverWpGuids = (input: unknown): string[] => {
+  if (!input) {
+    return [];
+  }
+
+  const discovered = new Set<string>();
+  const stack: unknown[] = [input];
+
+  while (stack.length > 0) {
+    const current = stack.pop();
+
+    if (!current || typeof current !== 'object') {
+      continue;
+    }
+
+    if (Array.isArray(current)) {
+      for (const item of current) {
+        stack.push(item);
+      }
+      continue;
+    }
+
+    for (const [key, value] of Object.entries(current as Record<string, unknown>)) {
+      if (isWpGuidKey(key)) {
+        const candidate = toOptionalString(value);
+        if (candidate) {
+          discovered.add(candidate);
+        }
+      }
+
+      if (value && typeof value === 'object') {
+        stack.push(value);
+      }
+    }
+  }
+
+  return Array.from(discovered);
+};
+
+const deriveGroupCodeFromPanelId = (panelId: string): string => {
+  const normalized = panelId.trim();
+  if (!normalized) {
+    return 'unknown';
+  }
+
+  if (!normalized.includes('_')) {
+    const withoutDigits = normalized.replace(/(\d+)(?!.*\d)/, '').replace(/[_-]+$/, '');
+    return withoutDigits || normalized;
+  }
+
+  const segments = normalized.split('_');
+  if (segments.length <= 1) {
+    return normalized;
+  }
+
+  const prefix = segments.slice(0, -1).join('_');
+  return prefix || normalized;
+};
+
+const generateComponentsFromWpGuids = (
+  wpGuids: string[],
+  project_id: string,
+  warnings: ImportIssue[],
+): NormalizedComponent[] => {
+  if (wpGuids.length === 0) {
+    return [];
+  }
+
+  const normalizedGuids = Array.from(new Set(wpGuids.map((value) => value.trim()).filter(Boolean)));
+  const dedupe = new Set<string>();
+  const components: NormalizedComponent[] = [];
+
+  for (const wpGuid of normalizedGuids) {
+    const panel_id = derivePanelIdFromWpGuid(wpGuid);
+    if (!panel_id) {
+      warnings.push(
+        toImportIssue(
+          `Unable to derive panel identifier from WP_GUID value "${wpGuid}".`,
+          'components',
+        ),
+      );
+      continue;
+    }
+
+    const id = deriveIdFromPanelCode(panel_id) ?? panel_id;
+    const group_code = deriveGroupCodeFromPanelId(panel_id);
+    const dedupeKey = `${project_id}::${group_code}::${id}`;
+    if (dedupe.has(dedupeKey)) {
+      continue;
+    }
+
+    dedupe.add(dedupeKey);
+    components.push({
+      project_id,
+      group_code,
+      id,
+      panel_id,
+      type: inferTypeFromGroupCode(group_code),
+      qaMetadata: { wpGuid },
+    });
+  }
+
+  if (components.length > 0) {
+    warnings.push(
+      toImportIssue(
+        'Derived component list from WP_GUID values because the components array was missing.',
+        'components',
+      ),
+    );
+  }
+
+  return components;
+};
+
 const extractQAMetadata = (
   source: Record<string, unknown>,
 ): AccessQAMetadata | undefined => {
@@ -123,20 +284,47 @@ const readSchema = (content: string, errors: ImportIssue[]): ImportSchema | null
 const normalizeProject = (
   raw: ImportSchema['project'],
   errors: ImportIssue[],
+  warnings: ImportIssue[],
+  derivedInfo: DerivedProjectInfo | null,  
 ): Project | null => {
   if (!raw) {
-    errors.push(toImportIssue('Missing "project" object in import file.', 'project'));
-    return null;
+    if (!derivedInfo) {
+      errors.push(toImportIssue('Missing "project" object in import file.', 'project'));
+      return null;
+    }
+
+    if (derivedInfo.conflictingCodes.length > 0) {
+      warnings.push(
+        toImportIssue(
+          `Multiple project codes discovered from WP_GUID values (${formatProjectCodes(derivedInfo)}); using ${derivedInfo.projectCode}.`,
+          'project',
+        ),
+      );
+    }
+
+    warnings.push(
+      toImportIssue(
+        'Derived project metadata from WP_GUID values because the project object was missing.',
+        'project',
+      ),
+    );
+
+    return {
+      project_id: derivedInfo.projectId,
+      project_code: derivedInfo.projectCode,
+    } satisfies Project;
   }
 
-  const project_code = raw.project_code?.toString().trim();
+  const project_codeRaw = raw.project_code?.toString().trim();
+  const project_code = project_codeRaw || derivedInfo?.projectCode;
   if (!project_code) {
     errors.push(toImportIssue('Missing project_code for project.', 'project.project_code'));
   }
 
-  const project_id = (raw.project_id ?? undefined) && raw.project_id !== ''
+  const hasExplicitProjectId = raw.project_id !== undefined && raw.project_id !== null && raw.project_id !== '';
+  const project_id = hasExplicitProjectId
     ? String(raw.project_id)
-    : crypto.randomUUID();
+    : derivedInfo?.projectId ?? crypto.randomUUID();
 
   const project: Project = {
     project_id,
@@ -149,6 +337,33 @@ const normalizeProject = (
 
   if (!project.project_code) {
     return null;
+  }
+
+  if (!project_codeRaw && derivedInfo?.projectCode) {
+    warnings.push(
+      toImportIssue(
+        'Derived project_code from WP_GUID values because it was missing in the project object.',
+        'project.project_code',
+      ),
+    );
+  }
+
+  if (!hasExplicitProjectId && derivedInfo?.projectId) {
+    warnings.push(
+      toImportIssue(
+        'Derived project_id from WP_GUID values because it was missing in the project object.',
+        'project.project_id',
+      ),
+    );
+  }
+
+  if (derivedInfo?.conflictingCodes.length) {
+    warnings.push(
+      toImportIssue(
+        `Multiple project codes discovered from WP_GUID values (${formatProjectCodes(derivedInfo)}); using ${derivedInfo.projectCode}.`,
+        'project',
+      ),
+    );
   }
 
   return project;
@@ -213,7 +428,7 @@ const normalizeComponent = (
     ? (typeRaw.toLowerCase() as Panel['type'])
     : inferTypeFromGroupCode(group_codeRaw);
 
-   if (!typeRaw) {
+  if (!typeRaw) {
     warnings.push(
       toImportIssue('Inferred component type from group_code.', `${path}.type`),
     );
@@ -310,42 +525,69 @@ export const analyzeImportFile = (content: string): ImportAnalysis => {
     );
   }
 
-  const project = normalizeProject(schema.project, errors);
+  const discoveredWpGuids = discoverWpGuids(schema);
+  const derivedProjectInfo = deriveProjectInfoFromWpGuids(discoveredWpGuids);
+
+  if (discoveredWpGuids.length > 0 && !derivedProjectInfo) {
+    warnings.push(
+      toImportIssue(
+        'Discovered WP_GUID values but none contained a recognizable project code.',
+        'project',
+      ),
+    );
+  }
+
+  const project = normalizeProject(schema.project, errors, warnings, derivedProjectInfo);
 
   const componentsRaw = Array.isArray(schema.components) ? schema.components : null;
-  if (!componentsRaw) {
-    errors.push(toImportIssue('Missing "components" array in import file.', 'components'));
-  }
 
   const normalizedComponents: NormalizedComponent[] = [];
   let duplicateComponents = 0;
 
-  if (project && componentsRaw) {
-    const seen = new Set<string>();
+  if (project) {
+    if (componentsRaw) {
+      const seen = new Set<string>();
 
-    componentsRaw.forEach((component, index) => {
-      const normalized = normalizeComponent(component, project.project_id, index, warnings, errors);
-      if (!normalized) {
-        return;
+      componentsRaw.forEach((component, index) => {
+        const normalized = normalizeComponent(component, project.project_id, index, warnings, errors);
+        if (!normalized) {
+          return;
+        }
+        const dedupeKey = `${normalized.project_id}::${normalized.group_code}::${normalized.id}`;
+        if (seen.has(dedupeKey)) {
+          duplicateComponents += 1;
+          warnings.push(
+            toImportIssue(
+              'Duplicate component encountered in file. Skipping subsequent entries.',
+              `components[${index}]`,
+            ),
+          );
+          return;
+        }
+        seen.add(dedupeKey);
+        normalizedComponents.push(normalized);
+      });
+    } else {
+      const derivedComponents = generateComponentsFromWpGuids(
+        discoveredWpGuids,
+        project.project_id,
+        warnings,
+      );
+
+      if (derivedComponents.length === 0) {
+        errors.push(toImportIssue('Missing "components" array in import file.', 'components'));
+      } else {
+        normalizedComponents.push(...derivedComponents);
       }
-      const dedupeKey = `${normalized.project_id}::${normalized.group_code}::${normalized.id}`;
-      if (seen.has(dedupeKey)) {
-        duplicateComponents += 1;
-        warnings.push(
-          toImportIssue(
-            'Duplicate component encountered in file. Skipping subsequent entries.',
-            `components[${index}]`,
-          ),
-        );
-        return;
-      }
-      seen.add(dedupeKey);
-      normalizedComponents.push(normalized);
-    });
+    }
+  } else if (!componentsRaw) {
+    errors.push(toImportIssue('Missing "components" array in import file.', 'components'));
   }
 
+  const totalComponents = componentsRaw ? componentsRaw.length : normalizedComponents.length;
+
   const stats = {
-    totalComponents: componentsRaw?.length ?? 0,
+    totalComponents,
     uniqueComponents: normalizedComponents.length,
     duplicateComponents,
   };
