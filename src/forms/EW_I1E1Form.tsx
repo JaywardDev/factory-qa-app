@@ -363,7 +363,7 @@ export default function EW_I1E1Form({ component }: EW_I1E1FormProps) {
               onChange={(event) => handlePhotoInput(currentStep, event)}
               style={{ display: "none" }}
             />
-            <div style={{ display: "in-line", gap: 8 }}>
+            <div style={{ display: "grid", gap: 8 }}>
               <button
                 type="button"
                 onClick={() => fileInputRefs.current[currentStep]?.click()}

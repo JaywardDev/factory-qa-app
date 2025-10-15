@@ -9,6 +9,17 @@ export type Project = {
   end_date?: string;
 };
 
+export type AccessQAMetadata = {
+  dbId?: string;
+  wpGuid?: string;
+  activityGroup?: string;
+  title?: string;
+  result?: string;
+  photoTaken?: string;
+  signee?: string;
+  timestamp?: string;
+};
+
 export type Panel = {
   type: 'ew' | 'iw' | 'mf' | 'r' | 'sw';
   project_id: UUID;
@@ -16,6 +27,7 @@ export type Panel = {
   id: string;              // panel identifier / Access sub group ("001", "004", ...)
   panel_id?: string;       // full Access identifier (e.g., "EW_0001") for display
   template_id?: string;   // Access template identifier (e.g., EW_I1E1)
+  qaMetadata?: AccessQAMetadata;  
 };
 
 export type QAForm = {
