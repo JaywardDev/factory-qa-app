@@ -1,7 +1,7 @@
 import Dexie from 'dexie';
 import { db } from './db';
 import { deriveIdFromPanelCode, inferTypeFromGroupCode } from './panel-helpers';
-import type { Panel, Project } from './types';
+import type { AccessQAMetadata, Panel, Project } from './types';
 
 type ImportSchema = {
   schema_version?: unknown;
@@ -47,6 +47,66 @@ export type ImportCommitResult = {
 };
 
 const SUPPORTED_SCHEMA_VERSION = 1;
+
+const toOptionalString = (value: unknown): string | undefined => {
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+  const trimmed = String(value).trim();
+  return trimmed === '' ? undefined : trimmed;
+};
+
+const extractField = (
+  source: Record<string, unknown>,
+  key: string,
+  fallbackKey?: string,
+): string | undefined => {
+  const primary = key in source ? source[key] : undefined;
+  const normalizedPrimary = toOptionalString(primary);
+  if (normalizedPrimary !== undefined) {
+    return normalizedPrimary;
+  }
+
+  if (fallbackKey === undefined) {
+    return undefined;
+  }
+
+  const fallback = source[fallbackKey];
+  return toOptionalString(fallback);
+};
+
+const derivePanelIdFromWpGuid = (wpGuid: string): string | null => {
+  const normalized = wpGuid.trim();
+  if (!normalized) {
+    return null;
+  }
+
+  const numericPrefixMatch = normalized.match(/^(\d+[_-]+)(.+)$/);
+  if (numericPrefixMatch?.[2]) {
+    return numericPrefixMatch[2];
+  }
+
+  return normalized;
+};
+
+const extractQAMetadata = (
+  source: Record<string, unknown>,
+): AccessQAMetadata | undefined => {
+  const metadata: AccessQAMetadata = {
+    dbId: extractField(source, 'DBID', 'dbid'),
+    wpGuid: extractField(source, 'WP_GUID', 'wp_guid'),
+    activityGroup: extractField(source, 'ACTIVITYGROUP', 'activity_group'),
+    title: extractField(source, 'TITLE', 'title'),
+    result: extractField(source, 'RESULT', 'result'),
+    photoTaken: extractField(source, 'PHOTO_TAKEN', 'photo_taken'),
+    signee: extractField(source, 'SIGNEE', 'signee'),
+    timestamp: extractField(source, 'TIMESTAMP', 'timestamp'),
+  };
+
+  return Object.values(metadata).some((value) => value !== undefined)
+    ? metadata
+    : undefined;
+};
 
 const toImportIssue = (message: string, path?: string): ImportIssue => ({ message, path });
 
@@ -103,15 +163,32 @@ const normalizeComponent = (
 ): Panel | null => {
   const path = `components[${index}]`;
 
-  const group_codeRaw = raw.group_code?.toString().trim();
+  const record = raw as Record<string, unknown>;
+  const qaMetadata = extractQAMetadata(record);
+
+  const group_codeRaw = extractField(record, 'group_code', 'GROUP_CODE');
   if (!group_codeRaw) {
     errors.push(toImportIssue('Missing group_code for component.', `${path}.group_code`));
     return null;
   }
 
-  const idRaw = raw.id?.toString().trim();
+  const idRaw = extractField(record, 'id', 'ID');
   let id = idRaw;
-  const panel_id = raw.panel_id?.toString().trim();
+  const wpGuid = qaMetadata?.wpGuid;
+  let panel_id = extractField(record, 'panel_id', 'PANEL_ID');
+
+  if (!panel_id && wpGuid) {
+    const derivedPanelId = derivePanelIdFromWpGuid(wpGuid);
+    if (derivedPanelId) {
+      panel_id = derivedPanelId;
+      warnings.push(
+        toImportIssue(
+          'Derived panel_id from WP_GUID because it was missing in the import file.',
+          `${path}.panel_id`,
+        ),
+      );
+    }
+  }
 
   if (!id) {
     const derived = panel_id ? deriveIdFromPanelCode(panel_id) : null;
@@ -131,17 +208,18 @@ const normalizeComponent = (
     return null;
   }
 
-  const normalizedType = raw.type
-    ? (String(raw.type).toLowerCase() as Panel['type'])
+  const typeRaw = extractField(record, 'type', 'TYPE');
+  const normalizedType = typeRaw
+    ? (typeRaw.toLowerCase() as Panel['type'])
     : inferTypeFromGroupCode(group_codeRaw);
 
-  if (!raw.type) {
+   if (!typeRaw) {
     warnings.push(
       toImportIssue('Inferred component type from group_code.', `${path}.type`),
     );
   }
 
-  const template_id = raw.template_id ? String(raw.template_id) : undefined;
+  const template_id = extractField(record, 'template_id', 'TEMPLATE_ID');
 
   if (template_id) {
     const expectedPrefix = normalizedType.toUpperCase();
@@ -163,6 +241,7 @@ const normalizeComponent = (
     panel_id: panel_id || undefined,
     type: normalizedType,
     template_id,
+    ...(qaMetadata ? { qaMetadata } : {}),    
   } satisfies Panel;
 };
 
