@@ -5,6 +5,12 @@ type SessionComponent = Pick<Panel, "project_id" | "group_code" | "id" | "templa
 
 const DEFAULT_TEMPLATE_ID = "DEFAULT";
 
+const table = () => {
+  const t = (db as any).qa_sessions;
+  if (!t) throw new Error('qa_sessions table missing.');
+  return t as typeof db.qa_sessions;
+};
+
 const normalizeTemplateId = (templateId?: string | null) => {
   const normalized = templateId?.trim().toUpperCase();
   return normalized && normalized.length > 0 ? normalized : null;
