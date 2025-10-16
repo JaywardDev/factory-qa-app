@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import type { ChangeEvent, FormEvent, ReactNode } from "react";
 import type { Panel } from "../lib/types";
+import { resolveSignatory, type Signatory } from "../lib/signatories";
 
 type EW_I1E1FormProps = {
   component: Panel;
@@ -10,6 +11,11 @@ type StepConfig = {
   title: string;
   render: () => ReactNode;
   signOffLabel: string;
+};
+
+type SignOffRecord = {
+  pin: string;
+  signatory: Signatory;
 };
 
 const yesNoOptions = [
@@ -241,11 +247,14 @@ export default function EW_I1E1Form({ component }: EW_I1E1FormProps) {
   );
 
   const [currentStep, setCurrentStep] = useState(0);
-  const [signOffs, setSignOffs] = useState<string[]>(
-    () => Array(steps.length).fill(""),
+  const [signOffPins, setSignOffPins] = useState<string[]>(() =>
+    Array(steps.length).fill(""),
   );
-  const [signOffErrors, setSignOffErrors] = useState<boolean[]>(
-    () => Array(steps.length).fill(false),
+  const [signOffRecords, setSignOffRecords] = useState<
+    (SignOffRecord | null)[]
+  >(() => Array(steps.length).fill(null));
+  const [signOffErrors, setSignOffErrors] = useState<(string | null)[]>(() =>
+    Array(steps.length).fill(null),
   );
   const [photos, setPhotos] = useState<(string | null)[]>(
     () => Array(steps.length).fill(null),
@@ -255,10 +264,10 @@ export default function EW_I1E1Form({ component }: EW_I1E1FormProps) {
   const currentConfig = steps[currentStep];
 
   const handleNextStep = () => {
-    if (!signOffs[currentStep]?.trim()) {
+    if (!signOffRecords[currentStep]?.signatory) {
       setSignOffErrors((prev) => {
         const next = [...prev];
-        next[currentStep] = true;
+       next[currentStep] = "A valid 4-digit PIN is required before continuing.";
         return next;
       });
       return;
@@ -271,15 +280,33 @@ export default function EW_I1E1Form({ component }: EW_I1E1FormProps) {
     setCurrentStep((prev) => Math.max(prev - 1, 0));
   };
 
-  const handleSignOffChange = (value: string) => {
-    setSignOffs((prev) => {
+  const handleSignOffPinChange = (value: string) => {
+    const sanitized = value.replace(/\D/g, "").slice(0, 4);
+
+    setSignOffPins((prev) => {
       const next = [...prev];
-      next[currentStep] = value;
+      next[currentStep] = sanitized;
       return next;
     });
+
+    const signatory =
+      sanitized.length === 4 ? resolveSignatory(sanitized) ?? null : null;
+
+    setSignOffRecords((prev) => {
+      const next = [...prev];
+      next[currentStep] = signatory
+        ? { pin: sanitized, signatory }
+        : null;
+      return next;
+    });
+
     setSignOffErrors((prev) => {
       const next = [...prev];
-      next[currentStep] = false;
+      if (sanitized.length === 4 && !signatory) {
+        next[currentStep] = "PIN not recognized. Please check and try again.";
+      } else {
+        next[currentStep] = null;
+      }
       return next;
     });
   };
@@ -316,15 +343,24 @@ export default function EW_I1E1Form({ component }: EW_I1E1FormProps) {
   };
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    if (!signOffs[steps.length - 1]?.trim()) {
+    if (!signOffRecords[steps.length - 1]?.signatory) {
       event.preventDefault();
       setSignOffErrors((prev) => {
         const next = [...prev];
-        next[steps.length - 1] = true;
+        next[steps.length - 1] =
+          "Final approval requires a valid 4-digit PIN.";
         return next;
       });
     }
   };
+
+  const completedSignatures = signOffRecords
+    .map((record, index) => (record ? { record, index } : null))
+    .filter(
+      (
+        entry,
+      ): entry is { record: SignOffRecord; index: number } => entry !== null,
+    )
 
   return (
     <form
@@ -423,28 +459,86 @@ export default function EW_I1E1Form({ component }: EW_I1E1FormProps) {
           <label style={{ display: "grid", gap: 6 }}>
             <span style={{ fontWeight: 500 }}>{currentConfig.signOffLabel}</span>
             <input
-              type="text"
-              name={`step-${currentStep + 1}-signoff`}
-              value={signOffs[currentStep]}
-              onChange={(event) => handleSignOffChange(event.target.value)}
-              placeholder="Enter name or signature reference"
+              type="password"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              name={`step-${currentStep + 1}-signoff-pin`}
+              value={signOffPins[currentStep]}
+              onChange={(event) => handleSignOffPinChange(event.target.value)}
+              placeholder="Enter 4-digit PIN"
+              autoComplete="one-time-code"
+              maxLength={4}
               style={{
                 width: "100%",
                 padding: 8,
                 border: "1px solid #cbd5e1",
                 borderRadius: 6,
+                letterSpacing: 4,
               }}
             />
           </label>
+          {signOffRecords[currentStep]?.signatory && (
+            <span style={{ color: "#0f172a", fontSize: 14 }}>
+              Signed by {signOffRecords[currentStep]!.signatory.name} (
+              {signOffRecords[currentStep]!.signatory.role})
+            </span>
+          )}          
           {signOffErrors[currentStep] && (
             <span style={{ color: "#dc2626", fontSize: 13 }}>
-              Sign-off is required before continuing.
+              {signOffErrors[currentStep]}
             </span>
           )}
         </div>      
       </section>
 
-      <div style={{ display: "flex", gap: 12 }}>         
+      {completedSignatures.length > 0 && (
+        <section
+          aria-label="QA sign-off log"
+          style={{
+            display: "grid",
+            gap: 12,
+            border: "1px solid #e2e8f0",
+            borderRadius: 10,
+            padding: 16,
+            background: "#f8fafc",
+          }}
+        >
+          <h4 style={{ margin: 0, color: "#0f172a" }}>QA sign-off log</h4>
+          <ul
+            style={{
+              margin: 0,
+              padding: 0,
+              listStyle: "none",
+              display: "grid",
+              gap: 8,
+            }}
+          >
+            {completedSignatures.map(({ record, index }) => (
+              <li
+                key={`signoff-${index}`}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 4,
+                  background: "#fff",
+                  border: "1px solid #cbd5e1",
+                  borderRadius: 8,
+                  padding: 12,
+                }}
+              >
+                <span style={{ fontWeight: 600 }}>
+                  {steps[index]!.signOffLabel}
+                </span>
+                <span style={{ color: "#0f172a" }}>
+                  {record.signatory.name} • {record.signatory.role}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <div style={{ display: "flex", gap: 12 }}>     
 
         {currentStep > 0 && (
           <button
