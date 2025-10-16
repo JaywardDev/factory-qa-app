@@ -1,8 +1,8 @@
 import { db } from './db';
 import { componentSource } from './component-source';
-import { deriveGroupCodeAndComponentId, normalizeAccessString, transformAccessComponentSource } from './access-component';
+import { deriveGroupCodeAndComponentId, normalizeAccessString, transformAccessComponentSource } from './access-components';
 import { deriveIdFromPanelCode, inferTypeFromGroupCode } from './panel-helpers';
-import type { Panel, Project } from './types';
+import type { Panel, Project, AccessQAMetadata } from './types';
 
 const uuid = () => crypto.randomUUID();
 
@@ -48,21 +48,33 @@ export async function seedIfEmpty() {
 
     const aggregated = transformAccessComponentSource(componentSource);
 
-    const components = aggregated.map((item) => {
-      const panelId = item.panel_id || item.WP_GUID;
-      const { groupCode, componentId } = deriveGroupCodeAndComponentId(panelId);
-      const inferredId = componentId || deriveIdFromPanelCode(panelId) || deriveIdFromPanelCode(item.WP_GUID) || panelId;
-      const templateId = templates.get(item.WP_GUID);
+    interface AggregatedItem {
+      panel_id?: string | null;
+      WP_GUID: string;
+      metadata?: unknown;
+      [key: string]: unknown;
+    }
+
+    interface DerivedGroupAndComponent {
+      groupCode: string;
+      componentId?: string | undefined;
+    }
+
+    const components: Panel[] = (aggregated as AggregatedItem[]).map((item: AggregatedItem) => {
+      const panelId: string = (item.panel_id || item.WP_GUID) as string;
+      const { groupCode, componentId } = deriveGroupCodeAndComponentId(panelId) as DerivedGroupAndComponent;
+      const inferredId: string = (componentId || deriveIdFromPanelCode(panelId) || deriveIdFromPanelCode(item.WP_GUID) || panelId) as string;
+      const templateId: string | undefined = templates.get(item.WP_GUID);
 
       return {
-        type: inferTypeFromGroupCode(groupCode),
-        project_id: project.project_id,
-        group_code: groupCode,
-        id: inferredId,
-        panel_id: panelId,
-        template_id: templateId,
-        metadata: item.metadata,
-        access_guid: item.WP_GUID,
+      type: inferTypeFromGroupCode(groupCode),
+      project_id: project.project_id,
+      group_code: groupCode,
+      id: inferredId,
+      panel_id: panelId,
+      template_id: templateId,
+      metadata: Array.isArray(item.metadata) ? (item.metadata as AccessQAMetadata[]) : undefined,
+      access_guid: item.WP_GUID,
       } satisfies Panel;
     });
 

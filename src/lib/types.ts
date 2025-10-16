@@ -26,6 +26,7 @@ export type Panel = {
   template_id?: string;   // Access template identifier (e.g., EW_I1E1)
   qaItems?: AccessQAItem[]; // Access QA entries associated with the component
   access_guid?: string;    // Access work package identifier (e.g., "42_IW_0006")
+  metadata?: AccessQAMetadata[]; // Additional metadata entries from Access
 };
 
 export type QAForm = {
