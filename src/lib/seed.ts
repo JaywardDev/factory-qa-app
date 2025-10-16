@@ -1,8 +1,8 @@
 import { db } from './db';
 import { componentSource } from './component-source';
-import type { AccessComponentSourceRow } from './component-source';
+import { deriveGroupCodeAndComponentId, normalizeAccessString, transformAccessComponentSource } from './access-component';
 import { deriveIdFromPanelCode, inferTypeFromGroupCode } from './panel-helpers';
-import type { AccessQAMetadata, Panel, Project } from './types';
+import type { Panel, Project } from './types';
 
 const uuid = () => crypto.randomUUID();
 
@@ -37,66 +37,34 @@ export async function seedIfEmpty() {
       return;
     }
 
-    const normalizeString = (value: string | undefined | null) => {
-      if (!value) return undefined;
-      const trimmed = value.trim();
-      return trimmed.length > 0 ? trimmed : undefined;
-    };
-
-    type GroupedRows = {
-      wpGuid: string;
-      rows: AccessComponentSourceRow[];
-    };
-
-    const grouped = new Map<string, GroupedRows>();
-
+    const templates = new Map<string, string>();
     for (const row of componentSource) {
-      const wpGuid = normalizeString(row.WP_GUID?.toUpperCase());
-      if (!wpGuid) {
-        continue;
-      }
-
-      const entry = grouped.get(wpGuid);
-      if (entry) {
-        entry.rows.push(row);
-      } else {
-        grouped.set(wpGuid, {
-          wpGuid: row.WP_GUID.trim(),
-          rows: [row],
-        });
+      const wpGuid = normalizeAccessString(row.WP_GUID).toUpperCase();
+      const templateId = normalizeAccessString(row.TEMPLATE);
+      if (wpGuid && templateId) {
+        templates.set(wpGuid, templateId);
       }
     }
 
-    const accessRowToMetadata = (row: AccessComponentSourceRow): AccessQAMetadata => ({
-      dbId: normalizeString(row.DBID),
-      wpGuid: normalizeString(row.WP_GUID),
-      activityGroup: normalizeString(row.ACTIVITYGROUP),
-      title: normalizeString(row.TITLE),
-      result: normalizeString(row.RESULT),
-      photoTaken: normalizeString(row.PHOTO_TAKEN),
-      signee: normalizeString(row.SIGNEE),
-      timestamp: normalizeString(row.TIMESTAMP),
-    });
+    const aggregated = transformAccessComponentSource(componentSource);
 
-    const rowsToComponent = ({ wpGuid, rows }: GroupedRows): Panel => {
-      const groupSegments = wpGuid.split('_').filter(Boolean);
-      const groupCode = groupSegments.length > 1 ? groupSegments.slice(0, -1).join('_') : wpGuid;
-      const id = deriveIdFromPanelCode(wpGuid) ?? wpGuid;
-      const templateRow = rows.find((row) => normalizeString(row.TEMPLATE));
-      const templateId = normalizeString(templateRow?.TEMPLATE);
+    const components = aggregated.map((item) => {
+      const panelId = item.panel_id || item.WP_GUID;
+      const { groupCode, componentId } = deriveGroupCodeAndComponentId(panelId);
+      const inferredId = componentId || deriveIdFromPanelCode(panelId) || deriveIdFromPanelCode(item.WP_GUID) || panelId;
+      const templateId = templates.get(item.WP_GUID);
 
       return {
         type: inferTypeFromGroupCode(groupCode),
         project_id: project.project_id,
         group_code: groupCode,
-        id,
-        panel_id: wpGuid,
+        id: inferredId,
+        panel_id: panelId,
         template_id: templateId,
-        metadata: rows.map(accessRowToMetadata),
+        qaItems: item.QAItem,
+        access_guid: item.WP_GUID,
       } satisfies Panel;
-    };
-
-    const components = Array.from(grouped.values()).map(rowsToComponent);
+    });
 
     if (components.length > 0) {
       await db.components.bulkAdd(components);
