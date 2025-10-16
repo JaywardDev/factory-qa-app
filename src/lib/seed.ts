@@ -61,7 +61,7 @@ export async function seedIfEmpty() {
         id: inferredId,
         panel_id: panelId,
         template_id: templateId,
-        qaItems: item.QAItem,
+        metadata: item.metadata,
         access_guid: item.WP_GUID,
       } satisfies Panel;
     });
