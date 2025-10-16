@@ -338,7 +338,7 @@ export default function EW_I1E1Form({ component }: EW_I1E1FormProps) {
       }}
     >
       <header style={{ display: "grid", gap: 4 }}>
-        <h3 style={{ margin: 0 }}>External Wall QA</h3>
+        <h3 style={{ margin: 0 }}>{component.panel_id ?? component.id} QA</h3>
         <p style={{ margin: 0, color: "#475569", fontSize: 14 }}>
           Record inspection results for {component.panel_id ?? component.id}.
           Complete the checks for the internal and external layers in sequence.
