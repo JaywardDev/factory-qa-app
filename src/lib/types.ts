@@ -17,6 +17,13 @@ export type AccessQAItem = {
   timestamp: string;
 };
 
+export type AccessQAMetadata = {
+  key: string;
+  value: string;
+  source?: string;
+  timestamp?: string;
+};
+
 export type Panel = {
   type: 'ew' | 'iw' | 'mf' | 'r' | 'sw';
   project_id: UUID;
