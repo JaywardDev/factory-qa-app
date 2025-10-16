@@ -55,6 +55,15 @@ export type PanelType = Panel['type'];
 export type Component = Panel;
 export type ComponentType = PanelType;
 
+export type QASessionRecord<T = unknown> = {
+  session_id: string;
+  project_id: UUID;
+  component_key: string;
+  template_id?: string | null;
+  data: T;
+  updated_at: string;
+};
+
 export const TYPE_LABEL: Record<PanelType,string> = {
   ew: 'External Walls',
   iw: 'Internal Walls',
