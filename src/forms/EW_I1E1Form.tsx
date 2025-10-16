@@ -240,7 +240,7 @@ export default function EW_I1E1Form({ component }: EW_I1E1FormProps) {
             </label>
           </div>
         ),
-        signOffLabel: "Final sign-off (Shift Leader)",
+        signOffLabel: "Final sign-off (Shift Leader or Production Manager)",
       },
     ],
     [],
@@ -280,6 +280,11 @@ export default function EW_I1E1Form({ component }: EW_I1E1FormProps) {
     setCurrentStep((prev) => Math.max(prev - 1, 0));
   };
 
+  const finalStepAllowedRoles = useMemo(
+    () => new Set(["Shift Leader", "Production Manager"]),
+    [],
+  );
+
   const handleSignOffPinChange = (value: string) => {
     const sanitized = value.replace(/\D/g, "").slice(0, 4);
 
@@ -292,11 +297,16 @@ export default function EW_I1E1Form({ component }: EW_I1E1FormProps) {
     const signatory =
       sanitized.length === 4 ? resolveSignatory(sanitized) ?? null : null;
 
+    const isFinalStep = currentStep === steps.length - 1;
+    const roleNotAllowed =
+      isFinalStep && signatory && !finalStepAllowedRoles.has(signatory.role);
+
+    const signOffRecord =
+      signatory && !roleNotAllowed ? { pin: sanitized, signatory } : null;
+
     setSignOffRecords((prev) => {
       const next = [...prev];
-      next[currentStep] = signatory
-        ? { pin: sanitized, signatory }
-        : null;
+      next[currentStep] = signOffRecord;
       return next;
     });
 
@@ -304,6 +314,9 @@ export default function EW_I1E1Form({ component }: EW_I1E1FormProps) {
       const next = [...prev];
       if (sanitized.length === 4 && !signatory) {
         next[currentStep] = "PIN not recognized. Please check and try again.";
+      } else if (roleNotAllowed) {
+        next[currentStep] =
+          "Final sign-off must be completed by a Shift Leader or Production Manager.";
       } else {
         next[currentStep] = null;
       }
