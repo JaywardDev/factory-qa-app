@@ -27,7 +27,6 @@ export type Panel = {
   id: string;              // panel identifier / Access sub group ("001", "004", ...)
   panel_id?: string;       // full Access identifier (e.g., "EW_0001") for display
   template_id?: string;   // Access template identifier (e.g., EW_I1E1)
-  qaMetadata?: AccessQAMetadata;  
 };
 
 export type QAForm = {
