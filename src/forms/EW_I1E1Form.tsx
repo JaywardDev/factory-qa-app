@@ -1,16 +1,15 @@
-import { useMemo, useRef, useState } from "react";
-import type { ChangeEvent, FormEvent, ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { ChangeEvent, FormEvent, ReactElement } from "react";
 import type { Panel } from "../lib/types";
 import { resolveSignatory, type Signatory } from "../lib/signatories";
+import {
+  createSessionId,
+  loadQASessionData,
+  saveQASessionData,
+} from "../lib/qa-sessions";
 
 type EW_I1E1FormProps = {
   component: Panel;
-};
-
-type StepConfig = {
-  title: string;
-  render: () => ReactNode;
-  signOffLabel: string;
 };
 
 type SignOffRecord = {
@@ -18,48 +17,22 @@ type SignOffRecord = {
   signatory: Signatory;
 };
 
+type ResponseValue = string | string[];
+
+type SessionState = {
+  currentStep: number;
+  responses: Record<string, ResponseValue>;
+  signOffPins: string[];
+  signOffRecords: (SignOffRecord | null)[];
+  photos: (string | null)[];
+};
+
+const STEP_COUNT = 6;
+
 const yesNoOptions = [
   { value: "yes", label: "Yes" },
   { value: "no", label: "No" },
 ];
-
-function renderRadioGroup(
-  name: string,
-  options: { value: string; label: string }[],
-) {
-  return (
-    <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
-      {options.map((option) => (
-        <label
-          key={option.value}
-          style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          <input type="radio" name={name} value={option.value} />
-          {option.label}
-        </label>
-      ))}
-    </div>
-  );
-}
-
-function renderMultiSelect(name: string, options: string[]) {
-  return (
-    <select
-      name={name}
-      multiple
-      style={{
-        padding: 8,
-        border: "1px solid #cbd5e1",
-        borderRadius: 6,
-        minHeight: 120,
-      }}>
-      {options.map((option) => (
-        <option key={option} value={option.toLowerCase().replace(/\s+/g, "-")}>
-          {option}
-        </option>
-      ))}
-    </select>
-  );
-}
 
 const internalLining = [
   "OSB15",
@@ -93,13 +66,13 @@ const externalLining = [
   "Membrane",
   "Ply H3 15",
   "Ply H3 17",
-  "Ply H3 19", 
+  "Ply H3 19",
   "WEATHERLINE10",
   "WEATHERLINE13",
   "GIB13",
   "GIB16",
   "Not applicable",
-]
+];
 
 const externalFixings = [
   "OSB15/12 - Nails",
@@ -121,7 +94,227 @@ const membraneOptions = [
   "Other",
 ];
 
+const clampStep = (step: number) => Math.max(0, Math.min(step, STEP_COUNT - 1));
+
+function ensureLength<T>(value: T[] | undefined, filler: T): T[] {
+  const base = Array.isArray(value) ? value.slice(0, STEP_COUNT) : [];
+  const result: T[] = [];
+
+  for (let index = 0; index < STEP_COUNT; index += 1) {
+    if (index < base.length && base[index] !== undefined) {
+      result.push(base[index] as T);
+    } else {
+      result.push(filler);
+    }
+  }
+
+  return result;
+}
+
+const createEmptySession = (): SessionState => ({
+  currentStep: 0,
+  responses: {},
+  signOffPins: Array(STEP_COUNT).fill(""),
+  signOffRecords: Array(STEP_COUNT).fill(null),
+  photos: Array(STEP_COUNT).fill(null),
+});
+
+function normalizeSession(session: Partial<SessionState> | null | undefined): SessionState {
+  if (!session) {
+    return createEmptySession();
+  }
+
+  return {
+    currentStep: clampStep(session.currentStep ?? 0),
+    responses: session.responses ?? {},
+    signOffPins: ensureLength(session.signOffPins, ""),
+    signOffRecords: ensureLength(session.signOffRecords, null),
+    photos: ensureLength(session.photos, null),
+  };
+}
+
+type StepConfig = {
+  title: string;
+  render: () => ReactElement;
+  signOffLabel: string;
+};
+
+function renderRadioGroup(
+  name: string,
+  options: { value: string; label: string }[],
+  currentValue: string,
+  onChange: (value: string) => void,
+) {
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+      {options.map((option) => (
+        <label key={option.value} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <input
+            type="radio"
+            name={name}
+            value={option.value}
+            checked={currentValue === option.value}
+            onChange={() => onChange(option.value)}
+          />
+          {option.label}
+        </label>
+      ))}
+    </div>
+  );
+}
+
+function renderMultiSelect(
+  name: string,
+  options: string[],
+  selectedValues: string[],
+  onChange: (values: string[]) => void,
+) {
+  return (
+    <select
+      name={name}
+      multiple
+      value={selectedValues}
+      onChange={(event) => {
+        const values = Array.from(event.target.selectedOptions).map((option) => option.value);
+        onChange(values);
+      }}
+      style={{
+        padding: 8,
+        border: "1px solid #cbd5e1",
+        borderRadius: 6,
+        minHeight: 120,
+      }}
+    >
+      {options.map((option) => (
+        <option key={option} value={option.toLowerCase().replace(/\s+/g, "-")}>
+          {option}
+        </option>
+      ))}
+    </select>
+  );
+}
+
 export default function EW_I1E1Form({ component }: EW_I1E1FormProps) {
+  const [session, setSession] = useState<SessionState>(() => createEmptySession());
+  const [sessionLoaded, setSessionLoaded] = useState(false);
+  const [signOffErrors, setSignOffErrors] = useState<(string | null)[]>(() =>
+    Array(STEP_COUNT).fill(null),
+  );
+  const fileInputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  const sessionComponent = useMemo(
+    () => ({
+      project_id: component.project_id,
+      group_code: component.group_code,
+      id: component.id,
+      template_id: component.template_id,
+    }),
+    [component.project_id, component.group_code, component.id, component.template_id],
+  );
+
+  const sessionKey = useMemo(
+    () => createSessionId(sessionComponent),
+    [sessionComponent],
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    setSession(createEmptySession());
+    setSignOffErrors(Array(STEP_COUNT).fill(null));
+    setSessionLoaded(false);
+
+    (async () => {
+      try {
+        const stored = await loadQASessionData<SessionState>(sessionComponent);
+        if (cancelled) {
+          return;
+        }
+        setSession(normalizeSession(stored));
+      } catch (error) {
+        console.error("Failed to load QA session", error);
+      } finally {
+        if (!cancelled) {
+          setSessionLoaded(true);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionComponent, sessionKey]);
+
+  useEffect(() => {
+    if (!sessionLoaded) {
+      return;
+    }
+
+    void saveQASessionData(sessionComponent, session).catch((error: unknown) => {
+      console.error("Failed to persist QA session", error);
+    });
+  }, [sessionComponent, session, sessionLoaded, sessionKey]);
+
+  const updateSession = useCallback(
+    (updater: (prev: SessionState) => SessionState) => {
+      setSession((prev) => updater(prev));
+    },
+    [],
+  );
+
+  const { currentStep, responses, signOffPins, signOffRecords, photos } = session;
+
+  const setCurrentStep = useCallback(
+    (nextStep: number) => {
+      updateSession((prev) => ({
+        ...prev,
+        currentStep: clampStep(nextStep),
+      }));
+    },
+    [updateSession],
+  );
+
+  const handleResponseChange = useCallback(
+    (name: string, value: ResponseValue) => {
+      updateSession((prev) => ({
+        ...prev,
+        responses: {
+          ...prev.responses,
+          [name]: value,
+        },
+      }));
+    },
+    [updateSession],
+  );
+
+  const getSingleValue = useCallback(
+    (name: string) => {
+      const value = responses[name];
+      if (typeof value === "string") {
+        return value;
+      }
+      if (Array.isArray(value)) {
+        return value[0] ?? "";
+      }
+      return "";
+    },
+    [responses],
+  );
+
+  const getMultiValue = useCallback(
+    (name: string) => {
+      const value = responses[name];
+      if (Array.isArray(value)) {
+        return value;
+      }
+      if (typeof value === "string" && value) {
+        return [value];
+      }
+      return [];
+    },
+    [responses],
+  );
+
   const steps = useMemo<StepConfig[]>(
     () => [
       {
@@ -132,12 +325,20 @@ export default function EW_I1E1Form({ component }: EW_I1E1FormProps) {
               "Framing check for square",
               "Structural fixing in frame as per drawings",
               "Slings installed as per drawings",
-            ].map((label, index) => (
-              <label key={label} style={{ display: "grid", gap: 6 }}>
-                <span style={{ fontWeight: 500 }}>{label}</span>
-                {renderRadioGroup(`step1-check-${index}`, yesNoOptions)}
-              </label>
-            ))}
+            ].map((label, index) => {
+              const name = `step1-check-${index}`;
+              return (
+                <label key={label} style={{ display: "grid", gap: 6 }}>
+                  <span style={{ fontWeight: 500 }}>{label}</span>
+                  {renderRadioGroup(
+                    name,
+                    yesNoOptions,
+                    getSingleValue(name),
+                    (value) => handleResponseChange(name, value),
+                  )}
+                </label>
+              );
+            })} 
           </div>
         ),
         signOffLabel: "Step 1 completed by",
@@ -148,15 +349,30 @@ export default function EW_I1E1Form({ component }: EW_I1E1FormProps) {
           <div style={{ display: "grid", gap: 16 }}>
             <label style={{ display: "grid", gap: 6 }}>
               <span style={{ fontWeight: 500 }}>Lining Type</span>
-              {renderMultiSelect("internal-components", internalLining)}
+              {renderMultiSelect(
+                "internal-components",
+                internalLining,
+                getMultiValue("internal-components"),
+                (values) => handleResponseChange("internal-components", values),
+              )}
             </label>
             <label style={{ display: "grid", gap: 6 }}>
               <span style={{ fontWeight: 500 }}>Fixings</span>
-              {renderMultiSelect("internal-fixings", fixingTreatment)}
+              {renderMultiSelect(
+                "internal-fixings",
+                fixingTreatment,
+                getMultiValue("internal-fixings"),
+                (values) => handleResponseChange("internal-fixings", values),
+              )}
             </label>
             <label style={{ display: "grid", gap: 6 }}>
               <span style={{ fontWeight: 500 }}>Fixing Type</span>
-              {renderMultiSelect("internal-fixing-types", fixingTypes)}
+              {renderMultiSelect(
+                "internal-fixing-types",
+                fixingTypes,
+                getMultiValue("internal-fixing-types"),
+                (values) => handleResponseChange("internal-fixing-types", values),
+              )}
             </label>
           </div>
         ),
@@ -171,12 +387,20 @@ export default function EW_I1E1Form({ component }: EW_I1E1FormProps) {
               "Conduits terminated and run to best practice as per drawings",
               "Airtightness - penetrations are sealed",
               "Fire rated wall, all penetrations treated as per drawings (i.e. gib lined or so)",
-            ].map((label, index) => (
-              <label key={label} style={{ display: "grid", gap: 6 }}>
-                <span style={{ fontWeight: 500 }}>{label}</span>
-                {renderRadioGroup(`step3-check-${index}`, yesNoOptions)}
-              </label>
-            ))}
+            ].map((label, index) => {
+              const name = `step3-check-${index}`;
+              return (
+                <label key={label} style={{ display: "grid", gap: 6 }}>
+                  <span style={{ fontWeight: 500 }}>{label}</span>
+                  {renderRadioGroup(
+                    name,
+                    yesNoOptions,
+                    getSingleValue(name),
+                    (value) => handleResponseChange(name, value),
+                  )}
+                </label>
+              );
+            })}
           </div>
         ),
         signOffLabel: "Step 3 completed by",
@@ -188,8 +412,13 @@ export default function EW_I1E1Form({ component }: EW_I1E1FormProps) {
             <label style={{ display: "grid", gap: 6 }}>
               <span style={{ fontWeight: 500 }}>
                 Insulation as per drawings. Tight fit, No gaps, No compression
-              </span>
-              {renderRadioGroup("step4-insulation", yesNoOptions)}
+              </span>      
+              {renderRadioGroup(
+                "step4-insulation",
+                yesNoOptions,
+                getSingleValue("step4-insulation"),
+                (value) => handleResponseChange("step4-insulation", value),
+              )}
             </label>
           </div>
         ),
@@ -201,19 +430,39 @@ export default function EW_I1E1Form({ component }: EW_I1E1FormProps) {
           <div style={{ display: "grid", gap: 16 }}>
             <label style={{ display: "grid", gap: 6 }}>
               <span style={{ fontWeight: 500 }}>External Lining</span>
-              {renderMultiSelect("external-components", externalLining)}
+              {renderMultiSelect(
+                "external-components",
+                externalLining,
+                getMultiValue("external-components"),
+                (values) => handleResponseChange("external-components", values),
+              )}
             </label>
             <label style={{ display: "grid", gap: 6 }}>
               <span style={{ fontWeight: 500 }}>External Fixings</span>
-              {renderMultiSelect("external-fixings", externalFixings)}
+              {renderMultiSelect(
+                "external-fixings",
+                externalFixings,
+                getMultiValue("external-fixings"),
+                (values) => handleResponseChange("external-fixings", values),
+              )}
             </label>
             <label style={{ display: "grid", gap: 6 }}>
               <span style={{ fontWeight: 500 }}>Services – final fix</span>
-              {renderRadioGroup("step5-services", yesNoOptions)}
+                  {renderRadioGroup(
+                "step5-services",
+                yesNoOptions,
+                getSingleValue("step5-services"),
+                (value) => handleResponseChange("step5-services", value),
+              )}
             </label>
             <label style={{ display: "grid", gap: 6 }}>
               <span style={{ fontWeight: 500 }}>Membranes as per specification</span>
-              {renderMultiSelect("membranes", membraneOptions)}
+              {renderMultiSelect(
+                "membranes",
+                membraneOptions,
+                getMultiValue("membranes"),
+                (values) => handleResponseChange("membranes", values),
+              )}
             </label>
           </div>
         ),
@@ -229,6 +478,8 @@ export default function EW_I1E1Form({ component }: EW_I1E1FormProps) {
                 name="comments"
                 rows={3}
                 placeholder="Add additional comments"
+                value={getSingleValue("comments")}
+                onChange={(event) => handleResponseChange("comments", event.target.value)}
                 style={{
                   width: "100%",
                   padding: 8,
@@ -243,23 +494,8 @@ export default function EW_I1E1Form({ component }: EW_I1E1FormProps) {
         signOffLabel: "Final sign-off (Shift Leader or Production Manager)",
       },
     ],
-    [],
+    [getMultiValue, getSingleValue, handleResponseChange],
   );
-
-  const [currentStep, setCurrentStep] = useState(0);
-  const [signOffPins, setSignOffPins] = useState<string[]>(() =>
-    Array(steps.length).fill(""),
-  );
-  const [signOffRecords, setSignOffRecords] = useState<
-    (SignOffRecord | null)[]
-  >(() => Array(steps.length).fill(null));
-  const [signOffErrors, setSignOffErrors] = useState<(string | null)[]>(() =>
-    Array(steps.length).fill(null),
-  );
-  const [photos, setPhotos] = useState<(string | null)[]>(
-    () => Array(steps.length).fill(null),
-  );
-  const fileInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const currentConfig = steps[currentStep];
 
@@ -267,17 +503,17 @@ export default function EW_I1E1Form({ component }: EW_I1E1FormProps) {
     if (!signOffRecords[currentStep]?.signatory) {
       setSignOffErrors((prev) => {
         const next = [...prev];
-       next[currentStep] = "A valid 4-digit PIN is required before continuing.";
+        next[currentStep] = "A valid 4-digit PIN is required before continuing.";
         return next;
       });
       return;
     }
 
-    setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1));
+    setCurrentStep(Math.min(currentStep + 1, steps.length - 1));
   };
 
   const handlePreviousStep = () => {
-    setCurrentStep((prev) => Math.max(prev - 1, 0));
+    setCurrentStep(Math.max(currentStep - 1, 0));
   };
 
   const finalStepAllowedRoles = useMemo(
@@ -287,13 +523,7 @@ export default function EW_I1E1Form({ component }: EW_I1E1FormProps) {
 
   const handleSignOffPinChange = (value: string) => {
     const sanitized = value.replace(/\D/g, "").slice(0, 4);
-
-    setSignOffPins((prev) => {
-      const next = [...prev];
-      next[currentStep] = sanitized;
-      return next;
-    });
-
+    
     const signatory =
       sanitized.length === 4 ? resolveSignatory(sanitized) ?? null : null;
 
@@ -303,11 +533,19 @@ export default function EW_I1E1Form({ component }: EW_I1E1FormProps) {
 
     const signOffRecord =
       signatory && !roleNotAllowed ? { pin: sanitized, signatory } : null;
+      
+    updateSession((prev) => {
+      const nextPins = [...prev.signOffPins];
+      nextPins[currentStep] = sanitized;
 
-    setSignOffRecords((prev) => {
-      const next = [...prev];
-      next[currentStep] = signOffRecord;
-      return next;
+      const nextRecords = [...prev.signOffRecords];
+      nextRecords[currentStep] = signOffRecord;
+
+      return {
+        ...prev,
+        signOffPins: nextPins,
+        signOffRecords: nextRecords,
+      };
     });
 
     setSignOffErrors((prev) => {
@@ -335,23 +573,29 @@ export default function EW_I1E1Form({ component }: EW_I1E1FormProps) {
 
     const reader = new FileReader();
     reader.onload = () => {
-      setPhotos((prev) => {
-        const next = [...prev];
-        next[index] = typeof reader.result === "string" ? reader.result : null;
-        return next;
+      const result = typeof reader.result === "string" ? reader.result : null;
+      updateSession((prev) => {
+        const next = [...prev.photos];
+        next[index] = result;
+        return {
+          ...prev,
+          photos: next,
+        };
       });
     };
     reader.readAsDataURL(file);
-
-    // reset input so the same file can be selected again if needed
+    
     event.target.value = "";
   };
 
   const clearPhoto = (index: number) => {
-    setPhotos((prev) => {
-      const next = [...prev];
+    updateSession((prev) => {
+      const next = [...prev.photos];
       next[index] = null;
-      return next;
+      return {
+        ...prev,
+        photos: next,
+      };
     });
   };
 
@@ -373,8 +617,8 @@ export default function EW_I1E1Form({ component }: EW_I1E1FormProps) {
       (
         entry,
       ): entry is { record: SignOffRecord; index: number } => entry !== null,
-    )
-
+    );
+    
   return (
     <form
       onSubmit={handleSubmit}
@@ -395,115 +639,118 @@ export default function EW_I1E1Form({ component }: EW_I1E1FormProps) {
         <p style={{ margin: 0, color: "#0f172a", fontWeight: 500 }}>
           Step {currentStep + 1} of {steps.length}
         </p>
-      </header>
+</header>
 
-      <section style={{ display: "grid", gap: 20 }}>
-        <h4 style={{ margin: 0, color: "#0f172a" }}>{currentConfig.title}</h4>
-        {currentConfig.render()}
+<section style={{ display: "grid", gap: 20 }}>
+  <h4 style={{ margin: 0, color: "#0f172a" }}>{currentConfig.title}</h4>
+  <div style={{ display: "grid", gap: 16 }}>
+    {currentConfig.render()}
+
+    <div style={{ display: "grid", gap: 12 }}>
+      {photos[currentStep] ? (
         <div style={{ display: "grid", gap: 8 }}>
-          <div style={{ display: "grid", gap: 6 }}>
-            <input
-              ref={(element) => {
-                fileInputRefs.current[currentStep] = element;
-              }}
-              type="file"
-              accept="image/*"
-              capture="environment"
-              onChange={(event) => handlePhotoInput(currentStep, event)}
-              style={{ display: "none" }}
-            />
-            <div style={{ display: "grid", gap: 8 }}>
-              <button
-                type="button"
-                onClick={() => fileInputRefs.current[currentStep]?.click()}
-                style={{
-                  padding: "10px 16px",
-                  borderRadius: 8,
-                  border: "1px solid #0ea5e9",
-                  background: "#e0f2fe",
-                  color: "#0369a1",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  justifySelf: "start",
-                }}
-              >
-                {photos[currentStep] ? "Retake photo" : "Take photo"}
-              </button>
-              {photos[currentStep] && (
-                <div
-                  style={{
-                    display: "grid",
-                    gap: 8,
-                    border: "1px solid #cbd5e1",
-                    borderRadius: 8,
-                    padding: 12,
-                    background: "#f8fafc",
-                  }}
-                >
-                  <img
-                    src={photos[currentStep] ?? undefined}
-                    alt={`Step ${currentStep + 1} capture`}
-                    style={{
-                      width: "100%",
-                      maxHeight: 200,
-                      objectFit: "cover",
-                      borderRadius: 6,
-                    }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => clearPhoto(currentStep)}
-                    style={{
-                      padding: "8px 12px",
-                      borderRadius: 6,
-                      border: "1px solid #cbd5e1",
-                      background: "#fff",
-                      color: "#0f172a",
-                      cursor: "pointer",
-                      justifySelf: "start",
-                    }}
-                  >
-                    Remove photo
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-          <label style={{ display: "grid", gap: 6 }}>
-            <span style={{ fontWeight: 500 }}>{currentConfig.signOffLabel}</span>
-            <input
-              type="password"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              name={`step-${currentStep + 1}-signoff-pin`}
-              value={signOffPins[currentStep]}
-              onChange={(event) => handleSignOffPinChange(event.target.value)}
-              placeholder="Enter 4-digit PIN"
-              autoComplete="one-time-code"
-              maxLength={4}
+          <img
+            src={photos[currentStep] ?? undefined}
+            alt={`Step ${currentStep + 1} photo`}
+            style={{ maxWidth: 320, borderRadius: 8 }}
+          />
+          <div style={{ display: "flex", gap: 8 }}>
+            <button
+              type="button"
+              onClick={() => fileInputRefs.current[currentStep]?.click()}
               style={{
-                width: "100%",
-                padding: 8,
+                padding: "8px 12px",
+                borderRadius: 8,
                 border: "1px solid #cbd5e1",
-                borderRadius: 6,
-                letterSpacing: 4,
+                background: "#f1f5f9",
+                cursor: "pointer",
+                fontWeight: 600,
               }}
-            />
-          </label>
-          {signOffRecords[currentStep]?.signatory && (
-            <span style={{ color: "#0f172a", fontSize: 14 }}>
-              Signed by {signOffRecords[currentStep]!.signatory.name} (
-              {signOffRecords[currentStep]!.signatory.role})
-            </span>
-          )}          
-          {signOffErrors[currentStep] && (
-            <span style={{ color: "#dc2626", fontSize: 13 }}>
-              {signOffErrors[currentStep]}
-            </span>
-          )}
-        </div>      
-      </section>
+            >
+              Change Photo
+            </button>
+            <button
+              type="button"
+              onClick={() => clearPhoto(currentStep)}
+              style={{
+                padding: "8px 12px",
+                borderRadius: 8,
+                border: "1px solid #fca5a5",
+                background: "#fff5f5",
+                cursor: "pointer",
+                color: "#dc2626",
+                fontWeight: 600,
+              }}
+            >
+              Remove Photo
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div style={{ display: "flex", gap: 8 }}>
+          <button
+            type="button"
+            onClick={() => fileInputRefs.current[currentStep]?.click()}
+            style={{
+              padding: "10px 14px",
+              borderRadius: 8,
+              border: "none",
+              background: "#0ea5e9",
+              color: "#fff",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            Add Photo
+          </button>
+        </div>
+      )}
 
+      <input
+          ref={(el) => { fileInputRefs.current[currentStep] = el; }}
+          type="file"
+          accept="image/*"
+          style={{ display: "none" }}
+          onChange={(e) => handlePhotoInput(currentStep, e)}
+        />
+    </div>
+
+    <label style={{ display: "grid", gap: 6 }}>
+      <span style={{ fontWeight: 500 }}>{currentConfig.signOffLabel}</span>
+      <input
+        type="password"
+        inputMode="numeric"
+        pattern="[0-9]*"
+        name={`step-${currentStep + 1}-signoff-pin`}
+        value={signOffPins[currentStep]}
+        onChange={(event) => handleSignOffPinChange(event.target.value)}
+        placeholder="Enter 4-digit PIN"
+        autoComplete="one-time-code"
+        maxLength={4}
+        style={{
+          width: "100%",
+          padding: 8,
+          border: "1px solid #cbd5e1",
+          borderRadius: 6,
+          letterSpacing: 4,
+        }}
+      />
+    </label>
+
+    {signOffRecords[currentStep]?.signatory && (
+      <span style={{ color: "#0f172a", fontSize: 14 }}>
+        Signed by {signOffRecords[currentStep]!.signatory.name} (
+        {signOffRecords[currentStep]!.signatory.role})
+      </span>
+    )}
+    {signOffErrors[currentStep] && (
+      <span style={{ color: "#dc2626", fontSize: 13 }}>
+        {signOffErrors[currentStep]}
+      </span>
+    )}
+  </div>
+</section>
+ 
       {completedSignatures.length > 0 && (
         <section
           aria-label="QA sign-off log"
@@ -551,56 +798,58 @@ export default function EW_I1E1Form({ component }: EW_I1E1FormProps) {
         </section>
       )}
 
-      <div style={{ display: "flex", gap: 12 }}>     
-
+      <div style={{ display: "flex", gap: 12 }}>
         {currentStep > 0 && (
           <button
             type="button"
             onClick={handlePreviousStep}
             style={{
-                padding: "10px 16px",
-                borderRadius: 8,
-                border: "1px solid #cbd5e1",
-                background: "#f1f5f9",
-                color: "#0f172a",
-                fontWeight: 600,
-                cursor: "pointer",
-            }}>
-            Previous   
-            </button>
+              padding: "10px 16px",
+              borderRadius: 8,
+              border: "1px solid #cbd5e1",
+              background: "#f1f5f9",
+              color: "#0f172a",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            Previous
+          </button>
         )}
 
         {currentStep < steps.length - 1 ? (
           <button
             type="button"
             onClick={handleNextStep}
-            style={{
-                padding: "10px 20px",
-                borderRadius: 8,
-                border: "none",
-                background: "#0ea5e9",
-                color: "#fff",
-                fontWeight: 600,
-                cursor: "pointer",
-            }}>
+            style={{                
+              padding: "10px 20px",
+              borderRadius: 8,
+              border: "none",
+              background: "#0ea5e9",
+              color: "#fff",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
             Next Step
           </button>
         ) : (
-            <button
-              type="submit"
-              style={{
-                  padding: "10px 20px",
-                  borderRadius: 8,
-                  border: "none",
-                  background: "#0ea5e9",
-                  color: "#fff",
-                  fontWeight: 600,
-                  cursor: "pointer",
-              }}>
-              Save QA Record
-            </button>
+          <button
+            type="submit"
+            style={{
+              padding: "10px 20px",
+              borderRadius: 8,
+              border: "none",
+              background: "#0ea5e9",
+              color: "#fff",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            Save QA Record
+          </button>
         )}
         </div>
     </form>
   );
-}
+}            
