@@ -898,8 +898,7 @@ export default function EW_I1E1Form({ component }: EW_I1E1FormProps) {
       </span>
     )}
   </div>
-</section>
- 
+</section> 
       {completedSignatures.length > 0 && (
         <section
           aria-label="QA sign-off log"
@@ -912,41 +911,6 @@ export default function EW_I1E1Form({ component }: EW_I1E1FormProps) {
             background: "#f8fafc",
           }}
         >
-          <h4 style={{ margin: 0, color: "#0f172a" }}>QA sign-off log</h4>
-          <ul
-            style={{
-              margin: 0,
-              padding: 0,
-              listStyle: "none",
-              display: "grid",
-              gap: 8,
-            }}
-          >
-            {completedSignatures.map(({ record, index }) => (
-              <li
-                key={`signoff-${index}`}
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 4,
-                  background: "#fff",
-                  border: "1px solid #cbd5e1",
-                  borderRadius: 8,
-                  padding: 12,
-                }}
-              >
-                <span style={{ fontWeight: 600 }}>
-                  {steps[index]!.signOffLabel}
-                </span>
-                <span style={{ color: "#0f172a" }}>
-                  {record.signatory.name} • {record.signatory.role}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
       <div style={{ display: "flex", gap: 12 }}>
         {currentStep > 0 && (
           <button
@@ -998,7 +962,41 @@ export default function EW_I1E1Form({ component }: EW_I1E1FormProps) {
             Save QA Record
           </button>
         )}
-        </div>
+        </div>          
+          <h4 style={{ margin: 0, color: "#0f172a" }}>QA sign-off log</h4>
+          <ul
+            style={{
+              margin: 0,
+              padding: 0,
+              listStyle: "none",
+              display: "grid",
+              gap: 8,
+            }}
+          >
+            {completedSignatures.map(({ record, index }) => (
+              <li
+                key={`signoff-${index}`}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 4,
+                  background: "#fff",
+                  border: "1px solid #cbd5e1",
+                  borderRadius: 8,
+                  padding: 12,
+                }}
+              >
+                <span style={{ fontWeight: 600 }}>
+                  {steps[index]!.signOffLabel}
+                </span>
+                <span style={{ color: "#0f172a" }}>
+                  {record.signatory.name} • {record.signatory.role}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </form>
   );
 }            
