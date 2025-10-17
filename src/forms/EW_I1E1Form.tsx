@@ -711,7 +711,7 @@ export default function EW_I1E1Form({ component }: EW_I1E1FormProps) {
       setSignOffErrors((prev) => {
         const next = [...prev];
         next[steps.length - 1] =
-          "Final approval requires a valid 4-digit PIN.";
+          "Requires higher authority to complete final sign-off.";
         return next;
       });
     }
@@ -873,7 +873,7 @@ export default function EW_I1E1Form({ component }: EW_I1E1FormProps) {
         name={`step-${currentStep + 1}-signoff-pin`}
         value={signOffPins[currentStep]}
         onChange={(event) => handleSignOffPinChange(event.target.value)}
-        placeholder="Enter 4-digit PIN"
+        placeholder="Enter Staff ID"
         autoComplete="one-time-code"
         maxLength={4}
         style={{

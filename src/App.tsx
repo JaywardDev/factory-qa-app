@@ -5,6 +5,7 @@ import ComponentList from "./components/ComponentList";
 import ExportButton from "./components/ExportButton";
 import ImportProjectButton from "./components/ImportProjectButton";
 import Modal from "./components/Modal";
+import AdminImportPanel from "./components/AdminImportPanel";
 import { seedIfEmpty } from "./lib/seed";
 import type { Project, Panel, PanelType } from "./lib/types";
 import "./index.css";
@@ -16,6 +17,8 @@ export default function App() {
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
   const [currentType, setCurrentType] = useState<PanelType | null>(null);
   const [currentComp, setCurrentComp] = useState<Panel | null>(null);
+  const [showImport, setShowImport] = useState(false);
+  const [dataVersion, setDataVersion] = useState(0);  
 
   // Route the selected component through the template registry so each modal
   // renders the correct Access-specific QA form.
@@ -28,6 +31,11 @@ export default function App() {
     let active = true;
 
     seedIfEmpty()
+      .then((seeded) => {
+        if (seeded) {
+          setDataVersion((value) => value + 1);
+        }
+      })    
       .catch((error) => {
         console.error("Failed to seed initial data", error);
       })
@@ -41,6 +49,14 @@ export default function App() {
       active = false;
     };
   }, []);
+
+  const handleDataImported = () => {
+    setCurrentComp(null);
+    setCurrentType(null);
+    setCurrentProject(null);
+    setDataReady(true);
+    setDataVersion((value) => value + 1);
+  };  
 
   const handleBackToProjects = () => {
     setCurrentComp(null);
@@ -64,13 +80,17 @@ export default function App() {
           </div>
         </div>
         <div className="toolbar-actions">
-          <ImportProjectButton />
+          <ImportProjectButton onClick={() => setShowImport(true)} />
           <ExportButton />
         </div>
       </header>
 
       {!currentProject && (
-        <ProjectList onPick={setCurrentProject} ready={dataReady} />
+        <ProjectList
+          onPick={setCurrentProject}
+          ready={dataReady}
+          refreshKey={dataVersion}
+        />
       )}
 
       {currentProject && !currentType && (
@@ -102,6 +122,13 @@ export default function App() {
         {ActiveTemplateForm && currentComp && (
           <ActiveTemplateForm component={currentComp} />
         )}
+      </Modal>
+
+      <Modal open={showImport} onClose={() => setShowImport(false)}>
+        <AdminImportPanel
+          onClose={() => setShowImport(false)}
+          onImported={handleDataImported}
+        />
       </Modal>
 
       <div className="app-hint">Projects → Categories → Components → QA (modal)</div>
