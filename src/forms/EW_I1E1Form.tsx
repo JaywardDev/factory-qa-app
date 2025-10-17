@@ -24,7 +24,7 @@ type SessionState = {
   responses: Record<string, ResponseValue>;
   signOffPins: string[];
   signOffRecords: (SignOffRecord | null)[];
-  photos: (string | null)[];
+  photos: string[][];
 };
 
 const STEP_COUNT = 6;
@@ -116,8 +116,34 @@ const createEmptySession = (): SessionState => ({
   responses: {},
   signOffPins: Array(STEP_COUNT).fill(""),
   signOffRecords: Array(STEP_COUNT).fill(null),
-  photos: Array(STEP_COUNT).fill(null),
+  photos: Array.from({ length: STEP_COUNT }, () => [] as string[]),
 });
+
+const normalizePhotos = (value: unknown): string[][] => {
+  if (!Array.isArray(value)) {
+    return Array.from({ length: STEP_COUNT }, () => [] as string[]);
+  }
+
+  const normalized: string[][] = [];
+
+  for (let index = 0; index < STEP_COUNT; index += 1) {
+    const entry = value[index];
+
+    if (Array.isArray(entry)) {
+      normalized.push(entry.filter((item): item is string => typeof item === "string"));
+      continue;
+    }
+
+    if (typeof entry === "string" && entry) {
+      normalized.push([entry]);
+      continue;
+    }
+
+    normalized.push([]);
+  }
+
+  return normalized;
+};
 
 function normalizeSession(session: Partial<SessionState> | null | undefined): SessionState {
   if (!session) {
@@ -129,7 +155,7 @@ function normalizeSession(session: Partial<SessionState> | null | undefined): Se
     responses: session.responses ?? {},
     signOffPins: ensureLength(session.signOffPins, ""),
     signOffRecords: ensureLength(session.signOffRecords, null),
-    photos: ensureLength(session.photos, null),
+    photos: normalizePhotos(session.photos),
   };
 }
 
@@ -201,6 +227,9 @@ export default function EW_I1E1Form({ component }: EW_I1E1FormProps) {
     Array(STEP_COUNT).fill(null),
   );
   const fileInputRefs = useRef<(HTMLInputElement | null)[]>([]);
+    const pendingPhotoReplacementRef = useRef<
+    { stepIndex: number; photoIndex: number } | null
+  >(null);
 
   const sessionComponent = useMemo(
     () => ({
@@ -263,6 +292,10 @@ export default function EW_I1E1Form({ component }: EW_I1E1FormProps) {
   );
 
   const { currentStep, responses, signOffPins, signOffRecords, photos } = session;
+
+  useEffect(() => {
+    pendingPhotoReplacementRef.current = null;
+  }, [currentStep]);
 
   const setCurrentStep = useCallback(
     (nextStep: number) => {
@@ -498,6 +531,7 @@ export default function EW_I1E1Form({ component }: EW_I1E1FormProps) {
   );
 
   const currentConfig = steps[currentStep];
+  const currentPhotos = photos[currentStep] ?? [];
 
   const handleNextStep = () => {
     if (!signOffRecords[currentStep]?.signatory) {
@@ -568,35 +602,107 @@ export default function EW_I1E1Form({ component }: EW_I1E1FormProps) {
   ) => {
     const file = event.target.files?.[0];
     if (!file) {
+      pendingPhotoReplacementRef.current = null;
       return;
     }
 
     const reader = new FileReader();
     reader.onload = () => {
       const result = typeof reader.result === "string" ? reader.result : null;
+      const replacement = pendingPhotoReplacementRef.current;
+
+      if (!result) {
+        pendingPhotoReplacementRef.current = null;
+        return;
+      }
+
       updateSession((prev) => {
-        const next = [...prev.photos];
-        next[index] = result;
+        const nextPhotos = prev.photos.map((photoList, photoIndex) => {
+          if (photoIndex !== index) {
+            return photoList;
+          }
+
+          const existing = [...photoList];
+
+          if (
+            replacement &&
+            replacement.stepIndex === index &&
+            replacement.photoIndex >= 0 &&
+            replacement.photoIndex < existing.length
+          ) {
+            const updated = [...existing];
+            updated[replacement.photoIndex] = result;
+            return updated;
+          }
+
+          return [...existing, result];
+        });
+
         return {
           ...prev,
-          photos: next,
+          photos: nextPhotos,
         };
       });
+
+      pendingPhotoReplacementRef.current = null;
     };
     reader.readAsDataURL(file);
     
     event.target.value = "";
   };
 
-  const clearPhoto = (index: number) => {
+  const clearPhotos = (index: number) => {
+    pendingPhotoReplacementRef.current = null;
     updateSession((prev) => {
-      const next = [...prev.photos];
-      next[index] = null;
+      const next = prev.photos.map((photoList, photoIndex) =>
+        photoIndex === index ? [] : photoList,
+      );
       return {
         ...prev,
         photos: next,
       };
     });
+  };
+
+  const removePhotoAt = (stepIndex: number, photoIndex: number) => {
+    pendingPhotoReplacementRef.current = null;
+    updateSession((prev) => {
+      const next = prev.photos.map((photoList, index) => {
+        if (index !== stepIndex) {
+          return photoList;
+        }
+
+        if (photoIndex < 0 || photoIndex >= photoList.length) {
+          return photoList;
+        }
+
+        return photoList.filter((_, idx) => idx !== photoIndex);
+      });
+      return {
+        ...prev,
+        photos: next,
+      };
+    });
+  };
+
+  const openPhotoPicker = (index: number) => {
+    setTimeout(() => {
+      fileInputRefs.current[index]?.click();
+    }, 0);
+  };
+
+  const takeAnotherPhoto = (index: number) => {
+    pendingPhotoReplacementRef.current = null;
+    openPhotoPicker(index);
+  };
+
+  const replacePhotoAt = (stepIndex: number, photoIndex: number) => {
+    pendingPhotoReplacementRef.current = {
+      stepIndex,
+      photoIndex,
+    };
+
+    openPhotoPicker(stepIndex);
   };
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -647,31 +753,72 @@ export default function EW_I1E1Form({ component }: EW_I1E1FormProps) {
     {currentConfig.render()}
 
     <div style={{ display: "grid", gap: 12 }}>
-      {photos[currentStep] ? (
-        <div style={{ display: "grid", gap: 8 }}>
-          <img
-            src={photos[currentStep] ?? undefined}
-            alt={`Step ${currentStep + 1} photo`}
-            style={{ maxWidth: 320, borderRadius: 8 }}
-          />
-          <div style={{ display: "flex", gap: 8 }}>
+      {currentPhotos.length > 0 ? (
+        <div style={{ display: "grid", gap: 12 }}>
+          <div style={{ display: "block", gap: 12 }}>
+            {currentPhotos.map((photo, photoIndex) => (
+              <div
+                key={`${currentStep}-photo-${photoIndex}`}
+                style={{ display: "grid", gap: 6, maxWidth: 320 }}
+              >
+                <img
+                  src={photo}
+                  alt={`Step ${currentStep + 1} photo ${photoIndex + 1}`}
+                  style={{ width: "100%", borderRadius: 8, objectFit: "cover" }}
+                />
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button
+                    type="button"
+                    onClick={() => replacePhotoAt(currentStep, photoIndex)}
+                    style={{
+                      padding: "6px 10px",
+                      borderRadius: 6,
+                      border: "1px solid #cbd5e1",
+                      background: "#f1f5f9",
+                      cursor: "pointer",
+                      fontWeight: 600,
+                    }}
+                  >
+                    Replace
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => removePhotoAt(currentStep, photoIndex)}
+                    style={{
+                      padding: "6px 10px",
+                      borderRadius: 6,
+                      border: "1px solid #fca5a5",
+                      background: "#fff5f5",
+                      cursor: "pointer",
+                      color: "#dc2626",
+                      fontWeight: 600,
+                    }}
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <button
               type="button"
-              onClick={() => fileInputRefs.current[currentStep]?.click()}
+              onClick={() => takeAnotherPhoto(currentStep)}
               style={{
                 padding: "8px 12px",
                 borderRadius: 8,
-                border: "1px solid #cbd5e1",
-                background: "#f1f5f9",
-                cursor: "pointer",
+                border: "none",
+                background: "#0ea5e9",
+                color: "#fff",
                 fontWeight: 600,
+                cursor: "pointer",
               }}
             >
-              Change Photo
+              Take Another Photo
             </button>
             <button
               type="button"
-              onClick={() => clearPhoto(currentStep)}
+              onClick={() => clearPhotos(currentStep)}
               style={{
                 padding: "8px 12px",
                 borderRadius: 8,
@@ -682,7 +829,7 @@ export default function EW_I1E1Form({ component }: EW_I1E1FormProps) {
                 fontWeight: 600,
               }}
             >
-              Remove Photo
+              Remove All Photos
             </button>
           </div>
         </div>
@@ -690,7 +837,7 @@ export default function EW_I1E1Form({ component }: EW_I1E1FormProps) {
         <div style={{ display: "flex", gap: 8 }}>
           <button
             type="button"
-            onClick={() => fileInputRefs.current[currentStep]?.click()}
+            onClick={() => openPhotoPicker(currentStep)}
             style={{
               padding: "10px 14px",
               borderRadius: 8,
@@ -707,12 +854,14 @@ export default function EW_I1E1Form({ component }: EW_I1E1FormProps) {
       )}
 
       <input
-          ref={(el) => { fileInputRefs.current[currentStep] = el; }}
-          type="file"
-          accept="image/*"
-          style={{ display: "none" }}
-          onChange={(e) => handlePhotoInput(currentStep, e)}
-        />
+        ref={(el) => {
+          fileInputRefs.current[currentStep] = el;
+        }}
+        type="file"
+        accept="image/*"
+        style={{ display: "none" }}
+        onChange={(e) => handlePhotoInput(currentStep, e)}
+      />
     </div>
 
     <label style={{ display: "grid", gap: 6 }}>
