@@ -2,10 +2,19 @@ import type { Panel } from './types';
 
 export const inferTypeFromGroupCode = (group_code: string): Panel['type'] => {
   const normalized = group_code.toLowerCase();
-  if (normalized.startsWith('ew')) return 'ew';
-  if (normalized.startsWith('iw')) return 'iw';
-  if (normalized.startsWith('mf')) return 'mf';
-  if (normalized.startsWith('roof') || normalized === 'roof' || normalized.startsWith('r_')) {
+  const tokens = normalized.split(/[^a-z]+/).filter(Boolean);
+
+  const matchToken = (predicate: (token: string) => boolean) =>
+    tokens.some(predicate) || predicate(normalized);
+
+  if (matchToken((token) => token.startsWith('ew'))) return 'ew';
+  if (matchToken((token) => token.startsWith('iw'))) return 'iw';
+  if (matchToken((token) => token.startsWith('mf'))) return 'mf';
+  if (
+    matchToken(
+      (token) => token === 'roof' || token.startsWith('roof') || token === 'r' || token.startsWith('r_'),
+    )
+  ) {
     return 'r';
   }
   return 'sw';

@@ -1,0 +1,108 @@
+{
+  "projects": [
+    {
+      "project_id": "a1aa1e0e-5b26-4ef4-9b89-05a5cd40d7f3",
+      "project_code": "230041",
+      "project_name": "Schubert residence",
+      "status": "active"
+    }
+  ],
+  "components": [
+    {
+      "type": "ew",
+      "project_id": "a1aa1e0e-5b26-4ef4-9b89-05a5cd40d7f3",
+      "group_code": "EW_01",
+      "id": "0001",
+      "panel_id": "EW_0001",
+      "template_id": "EW_I1E1",
+      "access_guid": "42_EW_0001",
+      "metadata": [
+        { "key": "activityGroup", "value": "Framing" },
+        { "key": "title", "value": "Slings Installed" },
+        { "key": "wpGuid", "value": "42_EW_0001" }
+      ],
+      "qaItems": [
+        {
+          "title": "Visual inspection",
+          "result": "pending",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        }
+      ]
+    },
+    {
+      "type": "ew",
+      "project_id": "a1aa1e0e-5b26-4ef4-9b89-05a5cd40d7f3",
+      "group_code": "EW_01",
+      "id": "0002",
+      "panel_id": "EW_0002",
+      "template_id": "EW_I1E1",
+      "access_guid": "42_EW_0002",
+      "metadata": [
+        { "key": "activityGroup", "value": "Section Sign Off" },
+        { "key": "title", "value": "Lining Outside Sign Off" },
+        { "key": "wpGuid", "value": "42_EW_0002" }
+      ]
+    },
+    {
+      "type": "iw",
+      "project_id": "a1aa1e0e-5b26-4ef4-9b89-05a5cd40d7f3",
+      "group_code": "IW_02",
+      "id": "0006",
+      "panel_id": "IW_0006",
+      "template_id": "EW_I1E1",
+      "access_guid": "42_IW_0006",
+      "metadata": [
+        { "key": "activityGroup", "value": "Framing" },
+        { "key": "title", "value": "Fixings as per drawings" },
+        { "key": "wpGuid", "value": "42_IW_0006" }
+      ]
+    },
+    {
+      "type": "mf",
+      "project_id": "a1aa1e0e-5b26-4ef4-9b89-05a5cd40d7f3",
+      "group_code": "MF_01",
+      "id": "0003",
+      "panel_id": "MF_0003",
+      "template_id": "",
+      "access_guid": "42_MF_0003",
+      "metadata": [
+        { "key": "activityGroup", "value": "Mid-floor" },
+        { "key": "title", "value": "Insulation installed" },
+        { "key": "wpGuid", "value": "42_MF_0003" }
+      ]
+    },
+    {
+      "type": "r",
+      "project_id": "a1aa1e0e-5b26-4ef4-9b89-05a5cd40d7f3",
+      "group_code": "ROOF_01",
+      "id": "0002",
+      "panel_id": "ROOF_0002",
+      "template_id": "",
+      "access_guid": "42_ROOF_0002",
+      "metadata": [
+        { "key": "activityGroup", "value": "Roof" },
+        { "key": "title", "value": "Membrane fixed" },
+        { "key": "wpGuid", "value": "42_ROOF_0002" }
+      ]
+    },
+    {
+      "type": "sw",
+      "project_id": "a1aa1e0e-5b26-4ef4-9b89-05a5cd40d7f3",
+      "group_code": "SW_01",
+      "id": "0001",
+      "panel_id": "SW_0001",
+      "template_id": "",
+      "access_guid": "42_SW_0001",
+      "metadata": [
+        { "key": "activityGroup", "value": "Structured Wall" },
+        { "key": "title", "value": "Bracing installed" },
+        { "key": "wpGuid", "value": "42_SW_0001" }
+      ]
+    }
+  ],
+  "qa_forms": [],
+  "qa_items": [],
+  "qa_sessions": []
+}

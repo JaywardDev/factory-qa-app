@@ -5,9 +5,10 @@ import type { Project } from "../lib/types";
 type Props = {
   onPick: (project: Project) => void;
   ready: boolean;
+  refreshKey?: number;
 };
 
-export default function ProjectList({ onPick, ready }: Props) {
+export default function ProjectList({ onPick, ready, refreshKey }: Props) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -30,7 +31,7 @@ export default function ProjectList({ onPick, ready }: Props) {
     return () => {
       active = false;
     };
-  }, [ready]);
+  }, [ready, refreshKey]);
 
   return (
     <div className="card">

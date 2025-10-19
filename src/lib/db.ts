@@ -1,11 +1,19 @@
 import Dexie from 'dexie';
 import type { Table } from 'dexie';
-import type { Project, Panel, QASessionRecord } from './types';
+import type {
+  Project,
+  Panel,
+  QAForm,
+  QAItem,
+  QASessionRecord,
+} from './types';
 
 class QAAppDB extends Dexie {
   projects!: Table<Project, string>;
   components!: Table<Panel, [string, string, string]>;
   qa_sessions!: Table<QASessionRecord, string>;
+  qa_forms!: Table<QAForm, string>;
+  qa_items!: Table<QAItem, string>;  
 
   constructor() {
     super('qa_app_db');
