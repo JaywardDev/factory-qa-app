@@ -6,10 +6,14 @@ import ExportButton from "./components/ExportButton";
 import ImportProjectButton from "./components/ImportProjectButton";
 import Modal from "./components/Modal";
 import AdminImportPanel from "./components/AdminImportPanel";
+import AuthorizationPrompt from "./components/AuthorizationPrompt";
 import { seedIfEmpty } from "./lib/seed";
 import type { Project, Panel, PanelType } from "./lib/types";
+import type { Signatory } from "./lib/signatories";
 import "./index.css";
 import { resolveTemplateForm } from "./forms/registry";
+
+type AuthAction = "import" | "export";
 
 // main app component with three levels of navigation flow
 export default function App() {
@@ -18,7 +22,8 @@ export default function App() {
   const [currentType, setCurrentType] = useState<PanelType | null>(null);
   const [currentComp, setCurrentComp] = useState<Panel | null>(null);
   const [showImport, setShowImport] = useState(false);
-  const [dataVersion, setDataVersion] = useState(0);  
+  const [authAction, setAuthAction] = useState<AuthAction | null>(null);
+  const [dataVersion, setDataVersion] = useState(0);
 
   // Route the selected component through the template registry so each modal
   // renders the correct Access-specific QA form.
@@ -63,6 +68,21 @@ export default function App() {
     setCurrentType(null);
     setCurrentProject(null);
   };
+
+  const handleAuthorized = (signatory: Signatory) => {
+    if (authAction === "import") {
+      setShowImport(true);
+    } else if (authAction === "export") {
+      alert(`Export coming soon. Authorized by ${signatory.name} (${signatory.role}).`);
+    }
+    setAuthAction(null);
+  };
+
+  const handleCancelAuth = () => {
+    setAuthAction(null);
+  };
+
+  const authLabel = authAction === "export" ? "export the latest data" : "open the import tools";  
   
   // main render and navigation flow
   return (
@@ -80,8 +100,8 @@ export default function App() {
           </div>
         </div>
         <div className="toolbar-actions">
-          <ImportProjectButton onClick={() => setShowImport(true)} />
-          <ExportButton />
+          <ImportProjectButton onClick={() => setAuthAction("import")} />
+          <ExportButton onClick={() => setAuthAction("export")} />
         </div>
       </header>
 
@@ -130,6 +150,16 @@ export default function App() {
           onImported={handleDataImported}
         />
       </Modal>
+
+      <Modal open={authAction !== null} onClose={handleCancelAuth}>
+        {authAction && (
+          <AuthorizationPrompt
+            actionLabel={authLabel}
+            onAuthorized={handleAuthorized}
+            onCancel={handleCancelAuth}
+          />
+        )}
+      </Modal>      
 
       <div className="app-hint">Projects → Categories → Components → QA (modal)</div>
     </div>
