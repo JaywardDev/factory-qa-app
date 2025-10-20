@@ -15,6 +15,20 @@ import { resolveTemplateForm } from "./forms/registry";
 
 type AuthAction = "import" | "export";
 
+const AUTHORIZATION_RULES: Record<
+  AuthAction,
+  { label: string; allowedRoles: readonly string[] }
+> = {
+  import: {
+    label: "open the import tools",
+    allowedRoles: ["Production Manager", "Factory Manager", "Admin"],
+  },
+  export: {
+    label: "export the latest data",
+    allowedRoles: ["Production Manager", "Factory Manager", "Admin"],
+  },
+};
+
 // main app component with three levels of navigation flow
 export default function App() {
   const [dataReady, setDataReady] = useState(false);
@@ -82,7 +96,7 @@ export default function App() {
     setAuthAction(null);
   };
 
-  const authLabel = authAction === "export" ? "export the latest data" : "open the import tools";  
+  const authConfig = authAction ? AUTHORIZATION_RULES[authAction] : null; 
   
   // main render and navigation flow
   return (
@@ -151,12 +165,13 @@ export default function App() {
         />
       </Modal>
 
-      <Modal open={authAction !== null} onClose={handleCancelAuth}>
-        {authAction && (
+      <Modal open={authConfig !== null} onClose={handleCancelAuth}>
+        {authAction && authConfig && (
           <AuthorizationPrompt
-            actionLabel={authLabel}
+            actionLabel={authConfig.label}
             onAuthorized={handleAuthorized}
             onCancel={handleCancelAuth}
+            allowedRoles={authConfig.allowedRoles}
           />
         )}
       </Modal>      
