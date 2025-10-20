@@ -6,6 +6,8 @@ import type {
   QAItem,
   QASessionRecord,
 } from './types';
+import * as XLSX from 'xlsx';
+import { convertRowsToSeedPayload } from './access-excel';
 
 export type SeedPayload = {
   projects?: Project[];
@@ -211,6 +213,30 @@ export async function importSeedFile(
   } catch (error) {
     throw new Error('The selected file does not contain valid JSON.');
   }
+  const result = await importSeedPayload(payload, options);
+  return { ...result, source: file.name };
+}
+
+export async function importExcelFile(
+  file: File,
+  options: ImportOptions = {},
+): Promise<ImportResult> {
+  let workbook: XLSX.WorkBook;
+  try {
+    const buffer = await file.arrayBuffer();
+    workbook = XLSX.read(buffer, { type: 'array' });
+  } catch (error) {
+    throw new Error('The selected file could not be parsed as an Excel workbook.');
+  }
+
+  const sheetName = workbook.SheetNames[0];
+  const worksheet = sheetName ? workbook.Sheets[sheetName] : undefined;
+  if (!worksheet) {
+    throw new Error('The Excel workbook does not contain any worksheets.');
+  }
+
+  const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(worksheet);
+  const payload = convertRowsToSeedPayload(rows);
   const result = await importSeedPayload(payload, options);
   return { ...result, source: file.name };
 }
