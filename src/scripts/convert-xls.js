@@ -36,15 +36,33 @@ const data = {
   qa_sessions: [],
 };
 
+const normalizeKey = (key) => String(key ?? "").replace(/[^A-Za-z0-9]/g, "").toLowerCase();
+const getColumnValue = (row, ...candidates) => {
+  if (!row) return undefined;
+
+  const normalizedCandidates = candidates.map((candidate) => normalizeKey(candidate));
+
+  for (const [key, value] of Object.entries(row)) {
+    if (normalizedCandidates.includes(normalizeKey(key))) {
+      return value;
+    }
+  }
+
+  return undefined;
+};
+
+const normalizeString = (value) => String(value ?? "").trim();
+
 rows.forEach((row) => {
   const rowData = row ?? {};
-  const wp = String(rowData.WP_GUID ?? "");
+  const wp = normalizeString(getColumnValue(rowData, "WP_GUID", "WP GUID", "WP"));
+  if (!wp) return;
   const match = wp.match(/^(?:(\d+))?([A-Za-z]+)_?(\d+)$/) ?? [];
   const projectCode = match[1] ?? "";
   const letters = match[2] ?? "";
   const digits = match[3] ?? "";
 
-  const guid = String(rowData.GUID ?? randomUUID());
+  const guid = normalizeString(getColumnValue(rowData, "GUID")) || randomUUID();
   const lettersUpper = letters.toUpperCase();
   const hasDigits = digits.length > 0;
   const groupCodeParts = [];
@@ -63,7 +81,7 @@ rows.forEach((row) => {
     data.projects.push({
       project_id: guid,
       project_code: projectCode,
-      project_name: rowData["PROJECT NAME"] ?? "",
+      project_name: normalizeString(getColumnValue(rowData, "PROJECT_NAME", "PROJECT NAME")),
       status: "active",
     });
   }
@@ -76,14 +94,14 @@ rows.forEach((row) => {
       group_code: groupCode,
       id,
       panel_id: panelId,
-      template_id: rowData.TEMPLATE ?? "",
+      template_id: normalizeString(getColumnValue(rowData, "TEMPLATE")),
       qaItems: [],
     };
     data.components.push(component);
   }
 
   component.qaItems.push({
-    title: rowData.TITLE ?? "",
+    title: normalizeString(getColumnValue(rowData, "TITLE")),
     result: "",
     photoTaken: "",
     signee: "",
