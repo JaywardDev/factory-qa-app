@@ -5,7 +5,7 @@ import {
   getBundledSeedUrl,
   getRemoteSeedUrl,
   importBundledSeed,
-  importSeedFile,
+  importExcelFile,
   syncFromRemote,
 } from '../lib/seed';
 import type { ImportResult } from '../lib/seed';
@@ -72,7 +72,7 @@ export function AdminImportPanel({ onClose, onImported }: Props) {
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    await runImport(() => importSeedFile(file, { clearExisting: replaceExisting }));
+     await runImport(() => importExcelFile(file, { clearExisting: replaceExisting }));
     event.target.value = '';
   };
 
@@ -108,14 +108,14 @@ export function AdminImportPanel({ onClose, onImported }: Props) {
       </label>
 
       <div style={{ ...sectionStyle }}>
-        <h3 style={{ marginTop: 0 }}>Import a JSON file</h3>
+        <h3 style={{ marginTop: 0 }}>Import an Excel workbook</h3>
         <p style={{ marginTop: 0, color: '#475569' }}>
-          Select a JSON backup exported from the app or generated offline. The importer accepts the
-          same structure as the bundled <code>seed-data.json</code> file.
+          Upload a spreadsheet exported from Access. The importer converts the first worksheet using
+          the same rules as <code>scripts/convert-xls.js</code> before loading the data into IndexedDB.
         </p>
         <input
           type="file"
-          accept="application/json"
+          accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
           onChange={handleFileChange}
           disabled={busy}
         />
