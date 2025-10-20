@@ -2,18 +2,18 @@
   "projects": [
     {
       "project_id": "{1917C836-9D32-4C57-A771-B7C5E7ECAEAF}",
-      "project_code": "",
+      "project_code": "86",
       "project_name": "Lake Tewa",
       "status": "active"
     }
   ],
   "components": [
     {
-      "type": "",
+      "type": "iw",
       "project_id": "{1917C836-9D32-4C57-A771-B7C5E7ECAEAF}",
-      "group_code": "",
-      "id": "",
-      "panel_id": "",
+      "group_code": "IW_0",
+      "id": "004",
+      "panel_id": "IW_0004",
       "template_id": "EW_I1E1",
       "qaItems": [
         {
@@ -232,7 +232,17 @@
           "photoTaken": "",
           "signee": "",
           "timestamp": ""
-        },
+        }
+      ]
+    },
+    {
+      "type": "r",
+      "project_id": "{1917C836-9D32-4C57-A771-B7C5E7ECAEAF}",
+      "group_code": "R_0",
+      "id": "001",
+      "panel_id": "R_0001",
+      "template_id": "EW_I1E1",
+      "qaItems": [
         {
           "title": "Final Sign off by QC person",
           "result": "",
@@ -484,7 +494,17 @@
           "photoTaken": "",
           "signee": "",
           "timestamp": ""
-        },
+        }
+      ]
+    },
+    {
+      "type": "ew",
+      "project_id": "{1917C836-9D32-4C57-A771-B7C5E7ECAEAF}",
+      "group_code": "EW_0",
+      "id": "003",
+      "panel_id": "EW_0003",
+      "template_id": "EW_I1E1",
+      "qaItems": [
         {
           "title": "Insulation tight, fully packed, no gaps",
           "result": "",

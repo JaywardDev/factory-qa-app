@@ -55,9 +55,16 @@ const normalizeString = (value) => String(value ?? "").trim();
 
 rows.forEach((row) => {
   const rowData = row ?? {};
+
+  if (!globalThis.__loggedOnce) {
+    console.log("Row keys:", Object.keys(rowData));
+    console.log("Sample row data:", rowData);
+    globalThis.__loggedOnce = true;
+  }
+
   const wp = normalizeString(getColumnValue(rowData, "WP_GUID", "WP GUID", "WP"));
   if (!wp) return;
-  const match = wp.match(/^(?:(\d+))?([A-Za-z]+)_?(\d+)$/) ?? [];
+const match = wp.match(/^(?:(\d+)[_-]?)?([A-Za-z]+)[_-]?(\d+)$/) ?? [];
   const projectCode = match[1] ?? "";
   const letters = match[2] ?? "";
   const digits = match[3] ?? "";
