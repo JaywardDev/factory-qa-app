@@ -1,0 +1,767 @@
+{
+  "projects": [
+    {
+      "project_id": "{1917C836-9D32-4C57-A771-B7C5E7ECAEAF}",
+      "project_code": "",
+      "project_name": "Lake Tewa",
+      "status": "active"
+    }
+  ],
+  "components": [
+    {
+      "type": "",
+      "project_id": "{1917C836-9D32-4C57-A771-B7C5E7ECAEAF}",
+      "group_code": "",
+      "id": "",
+      "panel_id": "",
+      "template_id": "EW_I1E1",
+      "qaItems": [
+        {
+          "title": "Slings Installed",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Framing Sign Off",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Lining Inside Sign Off",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Fixings as per drawings",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Product and layout as per Shop Drawings",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Airtightness Strip Installed",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Fixings",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Product and layout as per Shop Drawings",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Fire rated panel, use fire rated flush boxes",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Fixing Treatment",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Product and layout as per Shop Drawings",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Fixing Treatment",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Fixings",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Fixing Treatment",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Final Sign off by QC person",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Take photos of fire rated boxes, conduit runs, taping",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Squared",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Services Sign Off",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Photos of Frame",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Conduit sizes and runs as per drawings",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Fixings",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Lining Outside Sign Off",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Insulation Sign Off",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Fixing Treatment",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Plywood is to be laid in a brick-bond pattern.",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "All Penetrations are airtight (tape/grommets)",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Locations as per drawings",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "As per drawing",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Fixings",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Product and layout as per Shop Drawings",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Insulation tight, fully packed, no gaps",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Final Sign off by QC person",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Plywood is to be laid in a brick-bond pattern.",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Fixings",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Fixings",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Product and layout as per Shop Drawings",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Fire rated panel, use fire rated flush boxes",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Fixing Treatment",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Lining Outside Sign Off",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Airtightness Strip Installed",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "As per insulation installation sheet, weights match, take photo of final Blow-in QA sheet",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Fixing Treatment",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Framing Sign Off",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "All Penetrations are airtight (tape/grommets)",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Insulation Sign Off",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Lining Inside Sign Off",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Squared",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Conduit sizes and runs as per drawings",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Slings Installed",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Take photos of fire rated boxes, conduit runs, taping",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Services Sign Off",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Tapes all installed as per drawings",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Fixings as per drawings",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Fixing Treatment",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Product and layout as per Shop Drawings",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Product and layout as per Shop Drawings",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Product and layout as per Shop Drawings",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Photos of Frame",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Fixings",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Fixings",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Fixing Treatment",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "As per drawing",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Locations as per drawings",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Airtightness Strip Installed",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Product and layout as per Shop Drawings",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Fixings",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Fixing Treatment",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Insulation tight, fully packed, no gaps",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Lining Outside Sign Off",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Final Sign off by QC person",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "All Penetrations are airtight (tape/grommets)",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Fixing Treatment",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Fixings",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Product and layout as per Shop Drawings",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Product and layout as per Shop Drawings",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Fire rated wall, use fire rated flush boxes",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Product and layout as per Shop Drawings",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Conduit sizes and runs as per drawings",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Fixings",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Plywood is to be laid in a brick-bond pattern.",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Fixings",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Tapes all installed as per drawings",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Take photos of fire rated boxes, conduit runs, taping",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Locations as per drawings",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "As per drawing",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Fixing Treatment",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Fixings",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Lining Inside Sign Off",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Fixing Treatment",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Fixing Treatment",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Fixings",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Product and layout as per Shop Drawings",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Slings Installed",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Fixing Treatment",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Airtightness Strip Installed",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Fixings as per drawings",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Fixing Treatment",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Services Sign Off",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Squared",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Product and layout as per Shop Drawings",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Product and layout as per Shop Drawings",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Photos of Frame",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Framing Sign Off",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Fixings",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Insulation Sign Off",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        },
+        {
+          "title": "Airtightness Strip Installed",
+          "result": "",
+          "photoTaken": "",
+          "signee": "",
+          "timestamp": ""
+        }
+      ]
+    }
+  ],
+  "qa_forms": [],
+  "qa_items": [],
+  "qa_sessions": []
+}
