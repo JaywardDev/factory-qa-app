@@ -1,10 +1,30 @@
 import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 import { randomUUID } from "crypto";
 import * as XLSX from "xlsx";
 
-const [,, inputPath = "datasamplev2.xlsx", outputPath = "converted.json"] = process.argv;
+const scriptDir = path.dirname(fileURLToPath(import.meta.url));
+const [,, providedInput, providedOutput] = process.argv;
+const outputPath = path.resolve(process.cwd(), providedOutput ?? "converted.json");
 
-const workbook = XLSX.readFile(inputPath);
+const candidateInputs = providedInput
+  ? [path.resolve(process.cwd(), providedInput)]
+  : [
+      path.resolve(process.cwd(), "datasamplev2.xlsx"),
+      path.join(scriptDir, "datasamplev2.xlsx"),
+    ];
+
+const inputPath = candidateInputs.find((candidate) => fs.existsSync(candidate));
+
+if (!inputPath) {
+  const target = providedInput ?? "datasamplev2.xlsx";
+  console.error(`❌ Input file not found. Looked for ${target} relative to the current directory and alongside convert-xls.js.`);
+  process.exit(1);
+}
+
+const fileBuffer = fs.readFileSync(inputPath);
+const workbook = XLSX.read(fileBuffer, { type: "buffer" });
 const worksheet = workbook.Sheets[workbook.SheetNames[0]];
 const rows = XLSX.utils.sheet_to_json(worksheet);
 
