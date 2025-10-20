@@ -6,8 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "convert:xls": "node scripts/convert-xls.js"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.90.2",
