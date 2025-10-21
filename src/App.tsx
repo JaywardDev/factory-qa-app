@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import ProjectList from "./components/ProjectList";
 import CategoryBoard from "./components/CategoryBoard";
 import ComponentList from "./components/ComponentList";
-import ExportButton from "./components/ExportButton";
+import ExportButton, { type ExportStatus } from "./components/ExportButton";
 import ImportProjectButton from "./components/ImportProjectButton";
 import Modal from "./components/Modal";
 import AdminImportPanel from "./components/AdminImportPanel";
@@ -12,6 +12,7 @@ import type { Project, Panel, PanelType } from "./lib/types";
 import type { Signatory } from "./lib/signatories";
 import "./index.css";
 import { resolveTemplateForm } from "./forms/registry";
+import { downloadExportFile } from "./lib/export";
 
 type AuthAction = "import" | "export";
 
@@ -38,6 +39,8 @@ export default function App() {
   const [showImport, setShowImport] = useState(false);
   const [authAction, setAuthAction] = useState<AuthAction | null>(null);
   const [dataVersion, setDataVersion] = useState(0);
+  const [exportStatus, setExportStatus] = useState<ExportStatus>("idle");
+  const [exportMessage, setExportMessage] = useState<string | null>(null);  
 
   // Route the selected component through the template registry so each modal
   // renders the correct Access-specific QA form.
@@ -77,6 +80,12 @@ export default function App() {
     setDataVersion((value) => value + 1);
   };  
 
+  const handleExportClick = () => {
+    setExportStatus("idle");
+    setExportMessage(null);
+    setAuthAction("export");
+  };
+
   const handleBackToProjects = () => {
     setCurrentComp(null);
     setCurrentType(null);
@@ -86,9 +95,37 @@ export default function App() {
   const handleAuthorized = (signatory: Signatory) => {
     if (authAction === "import") {
       setShowImport(true);
-    } else if (authAction === "export") {
-      alert(`Export coming soon. Authorized by ${signatory.name} (${signatory.role}).`);
+      setAuthAction(null);
+      return;
     }
+
+    if (authAction === "export") {
+      setAuthAction(null);
+      setExportStatus("pending");
+      setExportMessage(
+        `Preparing export… Authorized by ${signatory.name} (${signatory.role}).`,
+      );
+
+      void (async () => {
+        try {
+          const { filename } = await downloadExportFile();
+          setExportStatus("success");
+          setExportMessage(
+            `Export ready: ${filename} downloaded. Authorized by ${signatory.name} (${signatory.role}).`,
+          );
+        } catch (error) {
+          console.error("Failed to export data", error);
+          setExportStatus("error");
+          setExportMessage(
+            error instanceof Error
+              ? `Export failed: ${error.message}`
+              : "Export failed: An unknown error occurred.",
+          );
+        }
+      })();
+
+      return;
+    }    
     setAuthAction(null);
   };
 
@@ -115,7 +152,11 @@ export default function App() {
         </div>
         <div className="toolbar-actions">
           <ImportProjectButton onClick={() => setAuthAction("import")} />
-          <ExportButton onClick={() => setAuthAction("export")} />
+          <ExportButton
+            onClick={handleExportClick}
+            status={exportStatus}
+            message={exportMessage}
+          />
         </div>
       </header>
 
