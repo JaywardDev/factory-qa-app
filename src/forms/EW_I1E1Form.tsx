@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent, FormEvent, ReactElement } from "react";
-import type { Panel } from "../lib/types";
-import { resolveSignatory, type Signatory } from "../lib/signatories";
+import type { AccessQAItem, Panel } from "../lib/types";
+import { db } from "../lib/db";
+import {
+  listSignatories,
+  resolveSignatory,
+  type Signatory,
+} from "../lib/signatories";
 import {
   createSessionId,
   loadQASessionData,
@@ -15,6 +20,7 @@ type EW_I1E1FormProps = {
 type SignOffRecord = {
   pin: string;
   signatory: Signatory;
+  timestamp: string;
 };
 
 type ResponseValue = string | string[];
@@ -28,6 +34,59 @@ type SessionState = {
 };
 
 const STEP_COUNT = 6;
+
+const MULTI_VALUE_DELIMITER = " | ";
+
+const QUESTION_TITLES: Record<string, string> = {
+  "step1-check-0": "Squared",
+  "step1-check-1": "Fixings as per drawings",
+  "step1-check-2": "Slings Installed",
+  "internal-components": "Product and layout as per Shop Drawings",
+  "internal-fixings": "Fixings",
+  "internal-fixing-types": "Fixing Treatment",
+  "step3-check-0": "Fire rated panel, use fire rated flush boxes",
+  "step3-check-1": "Conduit sizes and runs as per drawings",
+  "step3-check-2": "All Penetrations are airtight (tape/grommets)",
+  "step3-check-3": "As per drawing",
+  "step4-insulation": "Insulation tight, fully packed, no gaps",
+  "external-components": "Locations as per drawings",
+  "external-fixings": "Fixings",
+  "step5-services": "Services final fix",
+  membranes: "Airtightness Strip Installed",
+  comments: "Comments",
+};
+
+const MULTI_SELECT_FIELDS = new Set<string>([
+  "internal-components",
+  "internal-fixings",
+  "internal-fixing-types",
+  "external-components",
+  "external-fixings",
+  "membranes",
+]);
+
+type StepBindingMeta = {
+  signOffTitle: string;
+  photoTitle?: string;
+};
+
+const STEP_BINDINGS: StepBindingMeta[] = [
+  { signOffTitle: "Framing Sign Off", photoTitle: "Photos of Frame" },
+  { signOffTitle: "Lining Inside Sign Off" },
+  {
+    signOffTitle: "Services Sign Off",
+    photoTitle: "Take photos of fire rated boxes, conduit runs, taping",
+  },
+  { signOffTitle: "Insulation Sign Off" },
+  { signOffTitle: "Lining Outside Sign Off" },
+  { signOffTitle: "Final Sign off by QC person" },
+];
+
+const SIGNATORY_BY_NAME = new Map(
+  listSignatories().map((entry) => [entry.name.trim().toLowerCase(), entry]),
+);
+
+type QAItemLookupEntry = { item: AccessQAItem; index: number };
 
 const yesNoOptions = [
   { value: "yes", label: "Yes" },
@@ -154,10 +213,299 @@ function normalizeSession(session: Partial<SessionState> | null | undefined): Se
     currentStep: clampStep(session.currentStep ?? 0),
     responses: session.responses ?? {},
     signOffPins: ensureLength(session.signOffPins, ""),
-    signOffRecords: ensureLength(session.signOffRecords, null),
+    signOffRecords: ensureLength(session.signOffRecords, null).map((record) =>
+      record
+        ? {
+            pin: record.pin ?? "",
+            signatory: record.signatory,
+            timestamp: record.timestamp ?? "",
+          }
+        : null,
+    ),
     photos: normalizePhotos(session.photos),
   };
 }
+
+const normalizeTitle = (title: string | null | undefined) =>
+  (title ?? "").trim().toLowerCase();
+
+/**
+ * Creates a lookup map of Access QA items keyed by their normalized title. The
+ * map retains the original ordering of duplicate titles so callers can
+ * deterministically consume the correct Access row for each UI control without
+ * mutating the original collection.
+ */
+function createQAItemLookup(
+  qaItems: AccessQAItem[] | undefined,
+): Map<string, QAItemLookupEntry[]> {
+  const lookup = new Map<string, QAItemLookupEntry[]>();
+
+  (qaItems ?? []).forEach((item, index) => {
+    const key = normalizeTitle(item.title);
+    if (!key) {
+      return;
+    }
+
+    const entry: QAItemLookupEntry = { item, index };
+    const bucket = lookup.get(key);
+    if (bucket) {
+      bucket.push(entry);
+    } else {
+      lookup.set(key, [entry]);
+    }
+  });
+
+  return lookup;
+}
+
+const resolveSignatoryByName = (name: string | null | undefined) => {
+  if (!name) {
+    return undefined;
+  }
+  return SIGNATORY_BY_NAME.get(name.trim().toLowerCase());
+};
+
+const parseMultiSelectResult = (value: string): string[] => {
+  if (!value) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(value);
+    if (Array.isArray(parsed)) {
+      return parsed.filter((entry): entry is string => typeof entry === "string");
+    }
+  } catch (error) {
+    // Swallow JSON parse errors and fall back to delimiter splitting.
+  }
+
+  return value
+    .split(/[|,;]/)
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+};
+
+const parseStoredPhotos = (value: string): string[] => {
+  if (!value) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(value);
+    if (Array.isArray(parsed)) {
+      return parsed.filter((entry): entry is string => typeof entry === "string");
+    }
+    if (typeof parsed === "string" && parsed.trim()) {
+      return [parsed.trim()];
+    }
+  } catch (error) {
+    // Ignore and fall back to delimiter parsing.
+  }
+
+  return value
+    .split(/[|,;]/)
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+};
+
+const isSessionBlank = (session: SessionState) => {
+  if (Object.keys(session.responses).length > 0) {
+    return false;
+  }
+
+  if (session.photos.some((photoList) => photoList.length > 0)) {
+    return false;
+  }
+
+  return session.signOffRecords.every((record) => !record);
+};
+
+const applyQAItemsToSession = (
+  previous: SessionState,
+  qaLookup: Map<string, QAItemLookupEntry[]>,
+): SessionState => {
+  const responses: Record<string, ResponseValue> = { ...previous.responses };
+
+  const workingLookup = new Map(
+    Array.from(qaLookup.entries()).map(([key, entries]) => [key, entries.slice()]),
+  );
+
+  const consumeItem = (title: string): AccessQAItem | undefined => {
+    const key = normalizeTitle(title);
+    if (!key) {
+      return undefined;
+    }
+    const bucket = workingLookup.get(key);
+    if (!bucket || bucket.length === 0) {
+      return undefined;
+    }
+    const entry = bucket.shift();
+    return entry?.item;
+  };
+
+  for (const [questionId, title] of Object.entries(QUESTION_TITLES)) {
+    const item = consumeItem(title);
+    if (!item) {
+      continue;
+    }
+
+    if (MULTI_SELECT_FIELDS.has(questionId)) {
+      const parsed = parseMultiSelectResult(item.result);
+      if (parsed.length > 0) {
+        responses[questionId] = parsed;
+      }
+      continue;
+    }
+
+    if (item.result) {
+      responses[questionId] = item.result;
+    }
+  }
+
+  const signOffRecords = previous.signOffRecords.map((record) => record);
+  const signOffPins = previous.signOffPins.slice();
+  const photos = previous.photos.map((photoList) => photoList.slice());
+
+  STEP_BINDINGS.forEach((binding, index) => {
+    const signOffItem = consumeItem(binding.signOffTitle);
+    if (signOffItem) {
+      const signatory = resolveSignatoryByName(signOffItem.signee);
+      if (signatory) {
+        signOffRecords[index] = {
+          pin: "",
+          signatory,
+          timestamp: signOffItem.timestamp,
+        };
+        signOffPins[index] = "";
+      }
+    }
+
+    const photoItemTitle = binding.photoTitle ?? binding.signOffTitle;
+    const photoItem = consumeItem(photoItemTitle) ?? signOffItem;
+    if (photoItem) {
+      const parsedPhotos = parseStoredPhotos(photoItem.photoTaken);
+      if (parsedPhotos.length > 0) {
+        photos[index] = parsedPhotos;
+      }
+    }
+  });
+
+  return {
+    ...previous,
+    responses,
+    signOffPins,
+    signOffRecords,
+    photos,
+  };
+};
+
+const projectSessionToQAItems = (
+  qaItems: AccessQAItem[] | undefined,
+  session: SessionState,
+): AccessQAItem[] => {
+  const base = qaItems ? qaItems.map((item) => ({ ...item })) : [];
+  const lookup = createQAItemLookup(qaItems);
+  const workingLookup = new Map(
+    Array.from(lookup.entries()).map(([key, entries]) => [key, entries.slice()]),
+  );
+  const indexByTitle = new Map<string, number>();
+
+  base.forEach((item, index) => {
+    const key = normalizeTitle(item.title);
+    if (key && !indexByTitle.has(key)) {
+      indexByTitle.set(key, index);
+    }
+  });
+
+  const takeExisting = (title: string): AccessQAItem | undefined => {
+    const key = normalizeTitle(title);
+    if (!key) {
+      return undefined;
+    }
+    const bucket = workingLookup.get(key);
+    if (!bucket || bucket.length === 0) {
+      return undefined;
+    }
+    const entry = bucket.shift();
+    if (!entry) {
+      return undefined;
+    }
+
+    const { index } = entry;
+    if (index >= 0 && index < base.length) {
+      return base[index]!;
+    }
+    return undefined;
+  };
+
+  const ensureItem = (title: string): AccessQAItem => {
+    const existing = takeExisting(title);
+    if (existing) {
+      return existing;
+    }
+
+    const key = normalizeTitle(title);
+    const created: AccessQAItem = {
+      title,
+      result: "",
+      photoTaken: "",
+      signee: "",
+      timestamp: "",
+    };
+    indexByTitle.set(key, base.length);
+    base.push(created);
+    return created;
+  };
+
+  for (const [questionId, title] of Object.entries(QUESTION_TITLES)) {
+    const item = ensureItem(title);
+    const value = session.responses[questionId];
+
+    if (MULTI_SELECT_FIELDS.has(questionId)) {
+      if (Array.isArray(value)) {
+        item.result = value.join(MULTI_VALUE_DELIMITER);
+      } else if (typeof value === "string" && value) {
+        item.result = value;
+      } else {
+        item.result = "";
+      }
+      continue;
+    }
+
+    if (typeof value === "string") {
+      item.result = value;
+    } else if (Array.isArray(value)) {
+      item.result = value.join(MULTI_VALUE_DELIMITER);
+    } else {
+      item.result = "";
+    }
+  }
+
+  STEP_BINDINGS.forEach((binding, index) => {
+    const signOffItem = ensureItem(binding.signOffTitle);
+    const record = session.signOffRecords[index];
+    if (record?.signatory) {
+      signOffItem.signee = record.signatory.name;
+      signOffItem.timestamp =
+        record.timestamp && record.timestamp.length > 0
+          ? record.timestamp
+          : new Date().toISOString();
+    } else {
+      signOffItem.signee = "";
+      signOffItem.timestamp = "";
+    }
+
+    const targetPhotoTitle = binding.photoTitle ?? binding.signOffTitle;
+    const useSignOffItem = normalizeTitle(targetPhotoTitle) === normalizeTitle(binding.signOffTitle);
+    const photoItem = useSignOffItem
+      ? signOffItem
+      : ensureItem(targetPhotoTitle);
+    const photoList = session.photos[index] ?? [];
+    photoItem.photoTaken = photoList.length > 0 ? JSON.stringify(photoList) : "";
+  });
+
+  return base;
+};
 
 type StepConfig = {
   title: string;
@@ -227,7 +575,7 @@ export default function EW_I1E1Form({ component }: EW_I1E1FormProps) {
     Array(STEP_COUNT).fill(null),
   );
   const fileInputRefs = useRef<(HTMLInputElement | null)[]>([]);
-    const pendingPhotoReplacementRef = useRef<
+  const pendingPhotoReplacementRef = useRef<
     { stepIndex: number; photoIndex: number } | null
   >(null);
 
@@ -279,10 +627,30 @@ export default function EW_I1E1Form({ component }: EW_I1E1FormProps) {
       return;
     }
 
-    void saveQASessionData(sessionComponent, session).catch((error: unknown) => {
-      console.error("Failed to persist QA session", error);
-    });
-  }, [sessionComponent, session, sessionLoaded, sessionKey]);
+    const persist = async () => {
+      try {
+        await saveQASessionData(sessionComponent, session);
+        const updatedItems = projectSessionToQAItems(component.qaItems, session);
+        await db.components.update(
+          [component.project_id, component.group_code, component.id],
+          { qaItems: updatedItems },
+        );
+      } catch (error) {
+        console.error("Failed to persist QA session", error);
+      }
+    };
+
+    void persist();
+  }, [
+    component.group_code,
+    component.id,
+    component.project_id,
+    component.qaItems,
+    session,
+    sessionComponent,
+    sessionLoaded,
+    sessionKey,
+  ]);
 
   const updateSession = useCallback(
     (updater: (prev: SessionState) => SessionState) => {
@@ -292,6 +660,25 @@ export default function EW_I1E1Form({ component }: EW_I1E1FormProps) {
   );
 
   const { currentStep, responses, signOffPins, signOffRecords, photos } = session;
+
+  const sessionIsBlank = useMemo(() => isSessionBlank(session), [session]);
+
+  useEffect(() => {
+    if (!sessionLoaded || !sessionIsBlank) {
+      return;
+    }
+
+    if (!component.qaItems || component.qaItems.length === 0) {
+      return;
+    }
+
+    const lookup = createQAItemLookup(component.qaItems);
+    if (lookup.size === 0) {
+      return;
+    }
+
+    setSession((prev) => applyQAItemsToSession(prev, lookup));
+  }, [component.qaItems, sessionIsBlank, sessionLoaded]);
 
   useEffect(() => {
     pendingPhotoReplacementRef.current = null;
@@ -565,15 +952,28 @@ export default function EW_I1E1Form({ component }: EW_I1E1FormProps) {
     const roleNotAllowed =
       isFinalStep && signatory && !finalStepAllowedRoles.has(signatory.role);
 
-    const signOffRecord =
-      signatory && !roleNotAllowed ? { pin: sanitized, signatory } : null;
+    const signOffRecord: SignOffRecord | null =
+      signatory && !roleNotAllowed
+        ? { pin: sanitized, signatory, timestamp: new Date().toISOString() }
+        : null;
       
     updateSession((prev) => {
       const nextPins = [...prev.signOffPins];
       nextPins[currentStep] = sanitized;
 
       const nextRecords = [...prev.signOffRecords];
-      nextRecords[currentStep] = signOffRecord;
+      if (signOffRecord) {
+        const previousRecord = prev.signOffRecords[currentStep];
+        const timestamp =
+          previousRecord &&
+          previousRecord.signatory.pin === signOffRecord.signatory.pin &&
+          previousRecord.timestamp
+            ? previousRecord.timestamp
+            : signOffRecord.timestamp;
+        nextRecords[currentStep] = { ...signOffRecord, timestamp };
+      } else {
+        nextRecords[currentStep] = null;
+      }
 
       return {
         ...prev,
@@ -892,6 +1292,11 @@ export default function EW_I1E1Form({ component }: EW_I1E1FormProps) {
         {signOffRecords[currentStep]!.signatory.role})
       </span>
     )}
+    {signOffRecords[currentStep]?.timestamp && (
+      <span style={{ color: "#475569", fontSize: 12 }}>
+        Signed at {new Date(signOffRecords[currentStep]!.timestamp).toLocaleString()}
+      </span>
+    )}    
     {signOffErrors[currentStep] && (
       <span style={{ color: "#dc2626", fontSize: 13 }}>
         {signOffErrors[currentStep]}
@@ -992,6 +1397,11 @@ export default function EW_I1E1Form({ component }: EW_I1E1FormProps) {
                 <span style={{ color: "#0f172a" }}>
                   {record.signatory.name} • {record.signatory.role}
                 </span>
+                {record.timestamp && (
+                  <span style={{ color: "#475569", fontSize: 12 }}>
+                    Signed at {new Date(record.timestamp).toLocaleString()}
+                  </span>
+                )}                
               </li>
             ))}
           </ul>
